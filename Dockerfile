@@ -1,0 +1,6 @@
+FROM python:3.13-slim
+WORKDIR /app
+COPY . /app
+ENV BUDGET_SIM_HOST=0.0.0.0 BUDGET_SIM_PORT=8080 BUDGET_SIM_NO_BROWSER=1
+EXPOSE 8080
+CMD ["python", "server.py"]
