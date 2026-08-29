@@ -1,0 +1,105 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Database Schema</title><style>body{font-family:Segoe UI,Arial,sans-serif;margin:36px;color:#102a43}h1{color:#0b7285}.note{background:#edf8fa;border-left:5px solid #0b7285;padding:14px}pre{background:#0b1f33;color:#e6edf3;padding:22px;border-radius:10px;overflow:auto;line-height:1.45}</style></head><body><h1>Northbridge Components MBA Budget Simulation — SQL Schema</h1><p class="note">The student_entries table distinguishes student-entered values from system-calculated values and stores the calculation rule used for Section A annual units and sales revenue.</p><pre>PRAGMA foreign_keys = ON;
+
+CREATE TABLE IF NOT EXISTS scenarios (
+    scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scenario_code TEXT NOT NULL UNIQUE,
+    company_name TEXT NOT NULL,
+    budget_year INTEGER NOT NULL,
+    difficulty TEXT NOT NULL,
+    assignment_information_access TEXT NOT NULL DEFAULT &#x27;professor_only&#x27;
+        CHECK (assignment_information_access IN (&#x27;professor_only&#x27;,&#x27;student_and_professor&#x27;)),
+    assumptions_json TEXT NOT NULL,
+    schedules_json TEXT NOT NULL,
+    solution_json TEXT NOT NULL,
+    active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0,1)),
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    display_name TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN (&#x27;professor&#x27;,&#x27;student&#x27;)),
+    password_hash TEXT NOT NULL,
+    active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0,1)),
+    scenario_id INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (scenario_id) REFERENCES scenarios(scenario_id)
+);
+
+CREATE TABLE IF NOT EXISTS student_entries (
+    entry_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    scenario_id INTEGER NOT NULL,
+    cell_key TEXT NOT NULL,
+    entered_value TEXT,
+    entry_type TEXT NOT NULL DEFAULT &#x27;student_input&#x27;
+        CHECK (entry_type IN (&#x27;student_input&#x27;,&#x27;system_calculated&#x27;)),
+    calculation_rule TEXT,
+    updated_at TEXT NOT NULL,
+    UNIQUE (user_id, scenario_id, cell_key),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (scenario_id) REFERENCES scenarios(scenario_id)
+);
+
+CREATE TABLE IF NOT EXISTS submissions (
+    submission_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    scenario_id INTEGER NOT NULL,
+    attempt_number INTEGER NOT NULL,
+    score REAL NOT NULL,
+    entries_json TEXT NOT NULL,
+    grading_json TEXT NOT NULL,
+    submitted_at TEXT NOT NULL,
+    UNIQUE (user_id, scenario_id, attempt_number),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (scenario_id) REFERENCES scenarios(scenario_id)
+);
+
+CREATE TABLE IF NOT EXISTS submission_schedule_scores (
+    schedule_score_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    submission_id INTEGER NOT NULL,
+    schedule_id TEXT NOT NULL,
+    schedule_title TEXT NOT NULL,
+    earned_points REAL NOT NULL,
+    possible_points REAL NOT NULL,
+    correct_cells INTEGER NOT NULL,
+    possible_cells INTEGER NOT NULL,
+    FOREIGN KEY (submission_id) REFERENCES submissions(submission_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS app_settings (
+    setting_key TEXT PRIMARY KEY,
+    setting_value TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+    audit_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    action TEXT NOT NULL,
+    details_json TEXT,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS dynamics_sync_log (
+    sync_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    local_table TEXT NOT NULL,
+    local_record_id TEXT,
+    dataverse_entity_set TEXT NOT NULL,
+    dataverse_record_id TEXT,
+    sync_direction TEXT NOT NULL CHECK (sync_direction IN (&#x27;PUSH&#x27;,&#x27;PULL&#x27;)),
+    sync_status TEXT NOT NULL CHECK (sync_status IN (&#x27;PENDING&#x27;,&#x27;SUCCESS&#x27;,&#x27;FAILED&#x27;)),
+    response_code INTEGER,
+    response_message TEXT,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_entries_user_scenario ON student_entries(user_id, scenario_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_user ON submissions(user_id, submitted_at);
+CREATE INDEX IF NOT EXISTS idx_schedule_scores_submission ON submission_schedule_scores(submission_id);
+CREATE INDEX IF NOT EXISTS idx_audit_user_time ON audit_log(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_sync_status ON dynamics_sync_log(sync_status, created_at);
+</pre></body></html>

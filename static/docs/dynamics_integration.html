@@ -1,0 +1,37 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Dynamics / Dataverse Integration Guide</title>
+<style>body{font-family:Segoe UI,Arial,sans-serif;margin:36px;color:#102a43;line-height:1.55;max-width:1050px}h1,h2{color:#0b7285}code,pre{background:#edf2f7;border-radius:6px}code{padding:2px 5px}pre{padding:16px;overflow:auto}.note{background:#fff7df;border-left:5px solid #f4b942;padding:14px}.ok{background:#edf9f3;border-left:5px solid #18794e;padding:14px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #cbd5e1;padding:8px;text-align:left}th{background:#102a43;color:white}</style></head>
+<body>
+<h1>Microsoft Dynamics 365 / Dataverse Integration Guide</h1>
+<p class="ok">The application is fully functional with its packaged SQLite database. The included <code>dynamics_adapter.py</code> adds an optional synchronization layer for an organization's Microsoft Dataverse environment.</p>
+<h2>Important deployment distinction</h2>
+<p>Microsoft Dynamics 365 and Microsoft Dataverse are tenant-based cloud services. A downloadable package cannot contain a licensed Dynamics tenant or organizational credentials. A professor or system administrator must supply a Dataverse environment, register an application in Microsoft Entra ID, and grant the appropriate table permissions.</p>
+<h2>Suggested custom tables</h2>
+<table><tr><th>Local source</th><th>Dataverse entity set</th><th>Use</th></tr>
+<tr><td>scenarios</td><td>nb_budgetscenarios</td><td>Case assumptions and schedule metadata</td></tr>
+<tr><td>users</td><td>nb_budgetusers</td><td>Student/professor references</td></tr>
+<tr><td>student_entries</td><td>nb_budgetentries</td><td>Draft budget cells</td></tr>
+<tr><td>submissions</td><td>nb_budgetsubmissions</td><td>Graded attempts</td></tr>
+<tr><td>submission_schedule_scores</td><td>nb_budgetschedulescores</td><td>Schedule-level scores</td></tr>
+<tr><td>audit_log</td><td>nb_budgetauditlogs</td><td>Control and activity evidence</td></tr></table>
+<h2>Configuration</h2>
+<ol>
+<li>Create the custom Dataverse tables and columns described in <code>dataverse_table_mapping.csv</code> and <code>data_dictionary.csv</code>.</li>
+<li>Register an application in Microsoft Entra ID and grant it access to the Dataverse environment.</li>
+<li>Acquire an OAuth 2.0 access token for the organization URL.</li>
+<li>Set <code>DATAVERSE_URL</code> and <code>DATAVERSE_ACCESS_TOKEN</code> in the server environment.</li>
+<li>Use <code>DataverseClient.create_row</code>, <code>update_row</code>, and <code>retrieve_rows</code> from <code>dynamics_adapter.py</code>.</li>
+</ol>
+<pre>set DATAVERSE_URL=https://yourenvironment.crm.dynamics.com
+set DATAVERSE_ACCESS_TOKEN=your_oauth_token
+python server.py</pre>
+<h2>Web API behavior implemented</h2>
+<p>The adapter sends authenticated OData requests to <code>/api/data/v9.2/</code>. It uses POST to create rows, PATCH to update rows, and GET to retrieve rows. Responses and synchronization status can be recorded in the local <code>dynamics_sync_log</code> table.</p>
+<h2>Official Microsoft references</h2>
+<ul>
+<li>Authenticate to Microsoft Dataverse with the Web API: https://learn.microsoft.com/en-us/power-apps/developer/data-platform/webapi/authenticate-web-api</li>
+<li>Create a table row using the Web API: https://learn.microsoft.com/en-us/power-apps/developer/data-platform/webapi/create-entity-web-api</li>
+<li>Update and delete table rows: https://learn.microsoft.com/en-us/power-apps/developer/data-platform/webapi/update-delete-entities-using-web-api</li>
+</ul>
+<p class="note"><strong>Security:</strong> Do not commit access tokens to the package. In a production deployment, use managed identities, Azure Key Vault, or a server-side OAuth token service. Use Microsoft Entra authentication for users whenever possible.</p>
+</body></html>

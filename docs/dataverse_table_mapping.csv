@@ -1,0 +1,8 @@
+﻿Local Table,Suggested Dataverse Display Name,Suggested Entity Set,Purpose
+scenarios,Budget Scenario,nb_budgetscenarios,"Stores professor-access assignment information, schedule metadata, access scope, and instructor solution"
+users,Budget User,nb_budgetusers,Stores local application users or an external Entra subject reference
+student_entries,Budget Entry,nb_budgetentries,"Stores student draft cell values, identifies student-input versus system-calculated fields, and retains calculation-rule metadata"
+submissions,Budget Submission,nb_budgetsubmissions,Stores graded attempts and JSON snapshots
+submission_schedule_scores,Budget Schedule Score,nb_budgetschedulescores,Stores schedule-level grading detail
+audit_log,Budget Audit Log,nb_budgetauditlogs,Stores activity and control evidence
+dynamics_sync_log,Budget Sync Log,nb_budgetsynclogs,Stores local-to-Dataverse integration status

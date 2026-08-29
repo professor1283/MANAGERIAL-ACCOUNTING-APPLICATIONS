@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102a43">
+  <title>Northbridge Components | MBA Budget Simulation</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <main id="loginView" class="login-shell">
+    <section class="login-card">
+      <div class="brand-mark">NB</div>
+      <p class="eyebrow">Graduate Managerial Accounting Simulation</p>
+      <h1>Companywide Master Budget</h1>
+      <p class="lead">Assume the role of budget manager for a medium-size manufacturing company and prepare the operating budgets, financial budgets, and pro-forma statements.</p>
+      <form id="loginForm" class="stack">
+        <label>Username<input id="username" autocomplete="username" required></label>
+        <label>Password<input id="password" type="password" autocomplete="current-password" required></label>
+        <button class="primary" type="submit">Enter Simulation</button>
+      </form>
+      <details class="demo-credentials">
+        <summary>Demonstration accounts</summary>
+        <p><strong>Professor:</strong> professor / 3150</p>
+        <p><strong>Student:</strong> mba.student / budget2027</p>
+      </details>
+      <p id="loginError" class="error" role="alert"></p>
+    </section>
+  </main>
+
+  <div id="appView" class="app-shell hidden">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Northbridge Components, Inc.</p>
+        <h1>MBA Master Budget Simulation</h1>
+      </div>
+      <div class="user-menu">
+        <span id="userBadge" class="badge"></span>
+        <button id="logoutBtn" class="ghost">Sign Out</button>
+      </div>
+    </header>
+
+    <nav id="studentNav" class="nav-tabs hidden" aria-label="Student navigation">
+      <button data-view="workspace" class="active">Budget Workspace</button>
+      <button data-view="results">Results</button>
+    </nav>
+    <nav id="professorNav" class="nav-tabs hidden" aria-label="Professor navigation">
+      <button data-view="professorDashboard" class="active">Dashboard</button>
+      <button data-view="professorAssignment">Assignment Information</button>
+      <button data-view="professorSolution">Solution</button>
+      <button data-view="professorData">Data Model</button>
+    </nav>
+
+    <section id="professorAssignment" class="view hidden content-width">
+      <div class="hero panel">
+        <div>
+          <p class="eyebrow">Your role</p>
+          <h2>Corporate Budget Manager</h2>
+          <p>You are responsible for coordinating the 2027 companywide budget. Your schedules must be internally consistent and must support the pro-forma income statement, balance sheet, and statement of cash flows.</p>
+        </div>
+        <div class="metric-grid">
+          <div><span>Difficulty</span><strong>Medium</strong></div>
+          <div><span>Academic level</span><strong>Graduate MBA</strong></div>
+          <div><span>Budget horizon</span><strong>4 Quarters</strong></div>
+          <div><span>Total points</span><strong>100</strong></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="section-heading">
+          <div><p class="eyebrow">Case facts</p><h2>Budget Assumptions</h2></div>
+          <button id="printAssumptionsBtn" class="secondary">Print Assumptions</button>
+        </div>
+        <div id="assumptionsTable" class="responsive-table"></div>
+      </div>
+      <div class="panel">
+        <h2>Assignment Requirements</h2>
+        <div class="requirement-grid">
+          <article><strong>Operating budgets</strong><span>Sales, collections, production, materials, labor, overhead, inventory, and SG&amp;A</span></article>
+          <article><strong>Financial schedule</strong><span>Cash and line-of-credit financing schedule</span></article>
+          <article><strong>Pro-forma statements</strong><span>Income statement, balance sheet, and statement of cash flows</span></article>
+          <article><strong>Submission</strong><span>Save work at any time; submit a completed integrated budget for grading</span></article>
+        </div>
+        <button id="openProfessorSolutionBtn" class="primary">Open Solution Schedules</button>
+      </div>
+    </section>
+
+    <section id="workspace" class="view hidden workspace-layout">
+      <aside class="schedule-index panel">
+        <h2>Schedules</h2>
+        <div id="scheduleLinks"></div>
+        <div class="attempt-card">
+          <span>Attempts</span>
+          <strong id="attemptStatus">0 of 3 used</strong>
+        </div>
+        <button id="saveBtn" class="secondary full">Save Draft</button>
+        <button id="submitBtn" class="primary full">Submit for Grading</button>
+        <p id="saveStatus" class="small muted"></p>
+      </aside>
+      <div id="scheduleContainer" class="schedule-container"></div>
+    </section>
+
+    <section id="results" class="view hidden content-width">
+      <div id="resultsContent" class="panel"></div>
+    </section>
+
+    <section id="professorDashboard" class="view hidden content-width">
+      <div class="dashboard-grid">
+        <div class="panel span-2">
+          <div class="section-heading">
+            <div><p class="eyebrow">Instructor controls</p><h2>Student Progress</h2></div>
+            <a class="button secondary" href="/api/professor/export.csv">Export Scores CSV</a>
+          </div>
+          <div id="studentTable" class="responsive-table"></div>
+        </div>
+        <div class="panel">
+          <h2>Add Student</h2>
+          <form id="addStudentForm" class="stack compact">
+            <label>Student name<input id="newDisplayName" required></label>
+            <label>Username<input id="newUsername" required></label>
+            <label>Temporary password<input id="newPassword" type="password" minlength="6" required></label>
+            <button class="primary" type="submit">Create Student</button>
+          </form>
+        </div>
+        <div class="panel">
+          <h2>Assignment Settings</h2>
+          <form id="settingsForm" class="stack compact">
+            <label>Maximum attempts<input id="maxAttempts" type="number" min="1" max="10"></label>
+            <label>Passing score<input id="passingScore" type="number" min="0" max="100"></label>
+            <label class="check-row"><input id="allowFeedback" type="checkbox"> Show cell-level correctness to students</label>
+            <button class="secondary" type="submit">Save Settings</button>
+          </form>
+        </div>
+        <div class="panel span-2">
+          <h2>Recent Submissions</h2>
+          <div id="submissionTable" class="responsive-table"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="professorSolution" class="view hidden workspace-layout professor-solution-layout">
+      <aside class="schedule-index panel">
+        <h2>Solution Schedules</h2>
+        <div id="solutionLinks"></div>
+        <button id="printSolutionBtn" class="secondary full">Print Solution</button>
+      </aside>
+      <div id="solutionContainer" class="schedule-container"></div>
+    </section>
+
+    <section id="professorData" class="view hidden content-width">
+      <div class="panel">
+        <p class="eyebrow">Architecture</p>
+        <h2>Relational Data Model and Dynamics Integration</h2>
+        <p>The application uses SQLite locally and includes a Microsoft Dataverse Web API adapter for authenticated Dynamics 365 environments. The downloadable package contains the complete SQL schema, data dictionary, Dataverse table mapping, and deployment instructions.</p>
+        <div class="data-links">
+          <a class="button secondary" href="/docs/data_dictionary.html" target="_blank">Open Data Dictionary</a>
+          <a class="button secondary" href="/docs/schema.html" target="_blank">Open Schema</a>
+          <a class="button secondary" href="/docs/dynamics_integration.html" target="_blank">Dynamics Integration Guide</a>
+        </div>
+        <div class="integration-card">
+          <div>
+            <p class="eyebrow">Microsoft Dataverse</p>
+            <h3 id="dynamicsStatusTitle">Checking configuration…</h3>
+            <p id="dynamicsStatusText" class="muted"></p>
+          </div>
+          <button id="syncDynamicsBtn" class="primary">Push Unsynced Submissions</button>
+        </div>
+        <div class="erd">
+          <div>SCENARIOS</div><span>1 → many</span><div>USERS</div><span>1 → many</span><div>SUBMISSIONS</div>
+          <div>USERS</div><span>1 → many</span><div>STUDENT_ENTRIES</div><span>draft values</span><div>SCHEDULE CELLS</div>
+          <div>SUBMISSIONS</div><span>1 → many</span><div>SCHEDULE_SCORES</div><span>sync log</span><div>DATAVERSE</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <dialog id="confirmDialog">
+    <form method="dialog">
+      <h2>Submit Assignment?</h2>
+      <p>This action records a graded attempt. Confirm that all schedules are complete.</p>
+      <div class="dialog-actions">
+        <button value="cancel" class="secondary">Cancel</button>
+        <button id="confirmSubmitBtn" value="default" class="primary">Submit Attempt</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>

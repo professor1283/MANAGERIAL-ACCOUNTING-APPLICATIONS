@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Canvas Instructor Setup — Northbridge MBA Budget Simulation</title>
+<style>body{font-family:Arial,sans-serif;line-height:1.5;max-width:920px;margin:40px auto;padding:0 24px;color:#172b4d}h1,h2{color:#102a43}.box{border:1px solid #bcccdc;border-radius:10px;padding:18px;margin:18px 0;background:#f8fbfd}code{background:#edf2f7;padding:2px 5px;border-radius:4px}li{margin:.45rem 0}</style></head><body>
+<h1>Canvas LMS Instructor Setup</h1>
+<p>This guide adds Canvas access to the existing Northbridge Components MBA Master Budget Simulation without changing its assignment content, grading, screens, budgets, or database schema.</p>
+<h2>Recommended semester configuration</h2>
+<ol>
+<li>Deploy one class-wide copy of the application to an HTTPS-capable Python host. Keep <code>data/budget_simulation.db</code> on persistent storage.</li>
+<li>Before the first production launch, set <code>BUDGET_SIM_PROFESSOR_PASSWORD</code> to a private password and set <code>BUDGET_SIM_NO_BROWSER=1</code>.</li>
+<li>In Canvas, open <strong>Modules</strong>, add an <strong>External URL</strong> item, enter the hosted HTTPS simulation URL, and select <strong>Load in a new tab</strong>.</li>
+<li>Create student accounts in the application's existing Professor section. The application will preserve each student's drafts and attempts in the semester database.</li>
+<li>Use the existing <strong>Export Scores CSV</strong> control in the Professor dashboard for grade records.</li>
+<li>Use <code>Backup_Semester_Data.bat</code> on Windows or <code>Backup_Semester_Data.sh</code> on macOS/Linux to make regular database backups.</li>
+</ol>
+<div class="box"><strong>Why new-tab launch is recommended:</strong> Canvas pages run on a different web origin from the simulation. Some browsers or institutional privacy settings can restrict third-party cookies inside iframes. A new-tab launch avoids that class of login problem.</div>
+<h2>Optional iframe mode</h2>
+<p>If your institution wants the simulation embedded directly in Canvas, the simulation must be hosted through HTTPS. Set <code>BUDGET_SIM_CANVAS_EMBED=1</code> and <code>BUDGET_SIM_SECURE_COOKIES=1</code>. The application will then issue a <code>SameSite=None; Secure</code> session cookie suitable for cross-site Canvas framing. If a browser still blocks the framed session, use the same URL in a new tab.</p>
+<h2>Student download</h2>
+<p>The included <code>Student_Semester_Launcher.html</code> can be placed in Canvas Files or Modules. Students download it once, enter the instructor-provided HTTPS simulation URL, and thereafter use it as a one-click launcher. This preserves the central semester database and avoids distributing instructor solution/grading source files.</p>
+<h2>Full application package</h2>
+<p>The complete application remains separately downloadable for instructor deployment and archival use. Because it contains server-side grading and solution logic, distributing the complete source package to students is not recommended for a graded semester course.</p>
+</body></html>

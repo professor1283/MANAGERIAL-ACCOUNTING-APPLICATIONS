@@ -1,0 +1,9 @@
+{
+  "name": "Northbridge Components MBA Budget Simulation",
+  "short_name": "MBA Budget",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f7fa",
+  "theme_color": "#102a43",
+  "icons": []
+}

@@ -1,0 +1,250 @@
+﻿Schedule ID,Schedule Title,Schedule Weight,Budget Line,Column,Cell Key,Format,Entry Mode,Calculation Rule,Instructor Solution
+sales,A. Sales Budget,5,Budgeted unit sales,Q1,sales.units.Q1,units,student_input,,24000.0
+sales,A. Sales Budget,5,Budgeted unit sales,Q2,sales.units.Q2,units,student_input,,28000.0
+sales,A. Sales Budget,5,Budgeted unit sales,Q3,sales.units.Q3,units,student_input,,32000.0
+sales,A. Sales Budget,5,Budgeted unit sales,Q4,sales.units.Q4,units,student_input,,30000.0
+sales,A. Sales Budget,5,Budgeted unit sales,Total,sales.units.Total,units,system_calculated,SUM(sales.units.Q1:sales.units.Q4),114000.0
+sales,A. Sales Budget,5,Budgeted sales revenue,Q1,sales.revenue.Q1,currency,system_calculated,sales.units.Q1 * selling_price_per_unit,4440000.0
+sales,A. Sales Budget,5,Budgeted sales revenue,Q2,sales.revenue.Q2,currency,system_calculated,sales.units.Q2 * selling_price_per_unit,5180000.0
+sales,A. Sales Budget,5,Budgeted sales revenue,Q3,sales.revenue.Q3,currency,system_calculated,sales.units.Q3 * selling_price_per_unit,5920000.0
+sales,A. Sales Budget,5,Budgeted sales revenue,Q4,sales.revenue.Q4,currency,system_calculated,sales.units.Q4 * selling_price_per_unit,5550000.0
+sales,A. Sales Budget,5,Budgeted sales revenue,Total,sales.revenue.Total,currency,system_calculated,sales.units.Total * selling_price_per_unit,21090000.0
+collections,B. Cash Collections Budget,8,Collections from current-quarter sales,Q1,collections.current.Q1,currency,student_input,,1554000.0
+collections,B. Cash Collections Budget,8,Collections from current-quarter sales,Q2,collections.current.Q2,currency,student_input,,1813000.0
+collections,B. Cash Collections Budget,8,Collections from current-quarter sales,Q3,collections.current.Q3,currency,student_input,,2072000.0
+collections,B. Cash Collections Budget,8,Collections from current-quarter sales,Q4,collections.current.Q4,currency,student_input,,1942500.0
+collections,B. Cash Collections Budget,8,Collections from current-quarter sales,Total,collections.current.Total,currency,student_input,,7381500.0
+collections,B. Cash Collections Budget,8,Collections from prior-quarter sales / beginning A/R,Q1,collections.prior.Q1,currency,student_input,,2700000.0
+collections,B. Cash Collections Budget,8,Collections from prior-quarter sales / beginning A/R,Q2,collections.prior.Q2,currency,student_input,,2886000.0
+collections,B. Cash Collections Budget,8,Collections from prior-quarter sales / beginning A/R,Q3,collections.prior.Q3,currency,student_input,,3367000.0
+collections,B. Cash Collections Budget,8,Collections from prior-quarter sales / beginning A/R,Q4,collections.prior.Q4,currency,student_input,,3848000.0
+collections,B. Cash Collections Budget,8,Collections from prior-quarter sales / beginning A/R,Total,collections.prior.Total,currency,student_input,,12801000.0
+collections,B. Cash Collections Budget,8,Total cash collections,Q1,collections.total.Q1,currency,student_input,,4254000.0
+collections,B. Cash Collections Budget,8,Total cash collections,Q2,collections.total.Q2,currency,student_input,,4699000.0
+collections,B. Cash Collections Budget,8,Total cash collections,Q3,collections.total.Q3,currency,student_input,,5439000.0
+collections,B. Cash Collections Budget,8,Total cash collections,Q4,collections.total.Q4,currency,student_input,,5790500.0
+collections,B. Cash Collections Budget,8,Total cash collections,Total,collections.total.Total,currency,student_input,,20182500.0
+collections,B. Cash Collections Budget,8,Ending accounts receivable,Total,collections.ending_ar.Total,currency,student_input,,3607500.0
+production,C. Production Budget,8,Desired ending finished-goods units,Q1,production.desired_fg.Q1,units,student_input,,5600.0
+production,C. Production Budget,8,Desired ending finished-goods units,Q2,production.desired_fg.Q2,units,student_input,,6400.0
+production,C. Production Budget,8,Desired ending finished-goods units,Q3,production.desired_fg.Q3,units,student_input,,6000.0
+production,C. Production Budget,8,Desired ending finished-goods units,Q4,production.desired_fg.Q4,units,student_input,,5200.0
+production,C. Production Budget,8,Total unit requirements,Q1,production.total_needs.Q1,units,student_input,,29600.0
+production,C. Production Budget,8,Total unit requirements,Q2,production.total_needs.Q2,units,student_input,,34400.0
+production,C. Production Budget,8,Total unit requirements,Q3,production.total_needs.Q3,units,student_input,,38000.0
+production,C. Production Budget,8,Total unit requirements,Q4,production.total_needs.Q4,units,student_input,,35200.0
+production,C. Production Budget,8,Less: beginning finished-goods units,Q1,production.beginning_fg.Q1,units,student_input,,4800.0
+production,C. Production Budget,8,Less: beginning finished-goods units,Q2,production.beginning_fg.Q2,units,student_input,,5600.0
+production,C. Production Budget,8,Less: beginning finished-goods units,Q3,production.beginning_fg.Q3,units,student_input,,6400.0
+production,C. Production Budget,8,Less: beginning finished-goods units,Q4,production.beginning_fg.Q4,units,student_input,,6000.0
+production,C. Production Budget,8,Required production units,Q1,production.units.Q1,units,student_input,,24800.0
+production,C. Production Budget,8,Required production units,Q2,production.units.Q2,units,student_input,,28800.0
+production,C. Production Budget,8,Required production units,Q3,production.units.Q3,units,student_input,,31600.0
+production,C. Production Budget,8,Required production units,Q4,production.units.Q4,units,student_input,,29200.0
+production,C. Production Budget,8,Required production units,Total,production.units.Total,units,student_input,,114400.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Materials needed for production (kg),Q1,materials.production_needs_kg.Q1,units,student_input,,111600.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Materials needed for production (kg),Q2,materials.production_needs_kg.Q2,units,student_input,,129600.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Materials needed for production (kg),Q3,materials.production_needs_kg.Q3,units,student_input,,142200.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Materials needed for production (kg),Q4,materials.production_needs_kg.Q4,units,student_input,,131400.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Materials needed for production (kg),Total,materials.production_needs_kg.Total,units,student_input,,514800.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Desired ending raw-material inventory (kg),Q1,materials.desired_rm_kg.Q1,units,student_input,,19440.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Desired ending raw-material inventory (kg),Q2,materials.desired_rm_kg.Q2,units,student_input,,21330.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Desired ending raw-material inventory (kg),Q3,materials.desired_rm_kg.Q3,units,student_input,,19710.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Desired ending raw-material inventory (kg),Q4,materials.desired_rm_kg.Q4,units,student_input,,17955.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Total material requirements (kg),Q1,materials.total_needs_kg.Q1,units,student_input,,131040.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Total material requirements (kg),Q2,materials.total_needs_kg.Q2,units,student_input,,150930.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Total material requirements (kg),Q3,materials.total_needs_kg.Q3,units,student_input,,161910.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Total material requirements (kg),Q4,materials.total_needs_kg.Q4,units,student_input,,149355.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Less: beginning raw-material inventory (kg),Q1,materials.beginning_rm_kg.Q1,units,student_input,,16740.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Less: beginning raw-material inventory (kg),Q2,materials.beginning_rm_kg.Q2,units,student_input,,19440.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Less: beginning raw-material inventory (kg),Q3,materials.beginning_rm_kg.Q3,units,student_input,,21330.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Less: beginning raw-material inventory (kg),Q4,materials.beginning_rm_kg.Q4,units,student_input,,19710.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Required material purchases (kg),Q1,materials.purchases_kg.Q1,units,student_input,,114300.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Required material purchases (kg),Q2,materials.purchases_kg.Q2,units,student_input,,131490.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Required material purchases (kg),Q3,materials.purchases_kg.Q3,units,student_input,,140580.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Required material purchases (kg),Q4,materials.purchases_kg.Q4,units,student_input,,129645.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Required material purchases (kg),Total,materials.purchases_kg.Total,units,student_input,,516015.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Cost of material purchases,Q1,materials.purchase_cost.Q1,currency,student_input,,960120.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Cost of material purchases,Q2,materials.purchase_cost.Q2,currency,student_input,,1104516.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Cost of material purchases,Q3,materials.purchase_cost.Q3,currency,student_input,,1180872.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Cost of material purchases,Q4,materials.purchase_cost.Q4,currency,student_input,,1089018.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Cost of material purchases,Total,materials.purchase_cost.Total,currency,student_input,,4334526.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Cash payments for materials,Q1,materials.cash_payments.Q1,currency,student_input,,980060.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Cash payments for materials,Q2,materials.cash_payments.Q2,currency,student_input,,1032318.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Cash payments for materials,Q3,materials.cash_payments.Q3,currency,student_input,,1142694.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Cash payments for materials,Q4,materials.cash_payments.Q4,currency,student_input,,1134945.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Cash payments for materials,Total,materials.cash_payments.Total,currency,student_input,,4290017.0
+materials,D. Direct Materials Purchases and Cash Payments Budget,12,Ending accounts payable,Total,materials.ending_ap.Total,currency,student_input,,544509.0
+labor,E. Direct Labor Budget,7,Required direct-labor hours,Q1,labor.hours.Q1,hours,student_input,,44640.0
+labor,E. Direct Labor Budget,7,Required direct-labor hours,Q2,labor.hours.Q2,hours,student_input,,51840.0
+labor,E. Direct Labor Budget,7,Required direct-labor hours,Q3,labor.hours.Q3,hours,student_input,,56880.0
+labor,E. Direct Labor Budget,7,Required direct-labor hours,Q4,labor.hours.Q4,hours,student_input,,52560.0
+labor,E. Direct Labor Budget,7,Required direct-labor hours,Total,labor.hours.Total,hours,student_input,,205920.0
+labor,E. Direct Labor Budget,7,Direct-labor cost,Q1,labor.cost.Q1,currency,student_input,,1160640.0
+labor,E. Direct Labor Budget,7,Direct-labor cost,Q2,labor.cost.Q2,currency,student_input,,1347840.0
+labor,E. Direct Labor Budget,7,Direct-labor cost,Q3,labor.cost.Q3,currency,student_input,,1478880.0
+labor,E. Direct Labor Budget,7,Direct-labor cost,Q4,labor.cost.Q4,currency,student_input,,1366560.0
+labor,E. Direct Labor Budget,7,Direct-labor cost,Total,labor.cost.Total,currency,student_input,,5353920.0
+moh,F. Manufacturing Overhead Budget,8,Variable manufacturing overhead,Q1,moh.variable.Q1,currency,student_input,,535680.0
+moh,F. Manufacturing Overhead Budget,8,Variable manufacturing overhead,Q2,moh.variable.Q2,currency,student_input,,622080.0
+moh,F. Manufacturing Overhead Budget,8,Variable manufacturing overhead,Q3,moh.variable.Q3,currency,student_input,,682560.0
+moh,F. Manufacturing Overhead Budget,8,Variable manufacturing overhead,Q4,moh.variable.Q4,currency,student_input,,630720.0
+moh,F. Manufacturing Overhead Budget,8,Variable manufacturing overhead,Total,moh.variable.Total,currency,student_input,,2471040.0
+moh,F. Manufacturing Overhead Budget,8,Total manufacturing overhead,Q1,moh.total.Q1,currency,student_input,,1295680.0
+moh,F. Manufacturing Overhead Budget,8,Total manufacturing overhead,Q2,moh.total.Q2,currency,student_input,,1382080.0
+moh,F. Manufacturing Overhead Budget,8,Total manufacturing overhead,Q3,moh.total.Q3,currency,student_input,,1442560.0
+moh,F. Manufacturing Overhead Budget,8,Total manufacturing overhead,Q4,moh.total.Q4,currency,student_input,,1390720.0
+moh,F. Manufacturing Overhead Budget,8,Total manufacturing overhead,Total,moh.total.Total,currency,student_input,,5511040.0
+moh,F. Manufacturing Overhead Budget,8,Cash manufacturing overhead,Q1,moh.cash.Q1,currency,student_input,,1115680.0
+moh,F. Manufacturing Overhead Budget,8,Cash manufacturing overhead,Q2,moh.cash.Q2,currency,student_input,,1202080.0
+moh,F. Manufacturing Overhead Budget,8,Cash manufacturing overhead,Q3,moh.cash.Q3,currency,student_input,,1262560.0
+moh,F. Manufacturing Overhead Budget,8,Cash manufacturing overhead,Q4,moh.cash.Q4,currency,student_input,,1210720.0
+moh,F. Manufacturing Overhead Budget,8,Cash manufacturing overhead,Total,moh.cash.Total,currency,student_input,,4791040.0
+inventory,G. Inventory and Cost of Goods Sold Budget,10,Direct materials cost per finished unit,Total,inventory.dm_per_unit.Total,currency,student_input,,37.8
+inventory,G. Inventory and Cost of Goods Sold Budget,10,Direct labor cost per finished unit,Total,inventory.dl_per_unit.Total,currency,student_input,,46.8
+inventory,G. Inventory and Cost of Goods Sold Budget,10,Variable overhead cost per finished unit,Total,inventory.variable_oh_per_unit.Total,currency,student_input,,21.6
+inventory,G. Inventory and Cost of Goods Sold Budget,10,Fixed overhead cost per finished unit,Total,inventory.fixed_oh_per_unit.Total,currency,student_input,,26.57
+inventory,G. Inventory and Cost of Goods Sold Budget,10,Total budgeted unit product cost,Total,inventory.unit_product_cost.Total,currency,student_input,,132.77
+inventory,G. Inventory and Cost of Goods Sold Budget,10,Ending raw-material inventory value,Total,inventory.ending_rm_value.Total,currency,student_input,,150822.0
+inventory,G. Inventory and Cost of Goods Sold Budget,10,Ending finished-goods inventory value,Total,inventory.ending_fg_value.Total,currency,student_input,,690421.82
+inventory,G. Inventory and Cost of Goods Sold Budget,10,Cost of goods manufactured,Total,inventory.cogm.Total,currency,student_input,,15189280.0
+inventory,G. Inventory and Cost of Goods Sold Budget,10,Cost of goods sold,Total,inventory.cogs.Total,currency,student_input,,15136170.63
+sga,"H. Selling, General, and Administrative Expense Budget",7,Variable SG&A expense,Q1,sga.variable.Q1,currency,student_input,,310800.0
+sga,"H. Selling, General, and Administrative Expense Budget",7,Variable SG&A expense,Q2,sga.variable.Q2,currency,student_input,,362600.0
+sga,"H. Selling, General, and Administrative Expense Budget",7,Variable SG&A expense,Q3,sga.variable.Q3,currency,student_input,,414400.0
+sga,"H. Selling, General, and Administrative Expense Budget",7,Variable SG&A expense,Q4,sga.variable.Q4,currency,student_input,,388500.0
+sga,"H. Selling, General, and Administrative Expense Budget",7,Variable SG&A expense,Total,sga.variable.Total,currency,student_input,,1476300.0
+sga,"H. Selling, General, and Administrative Expense Budget",7,Total SG&A expense,Q1,sga.total.Q1,currency,student_input,,1030800.0
+sga,"H. Selling, General, and Administrative Expense Budget",7,Total SG&A expense,Q2,sga.total.Q2,currency,student_input,,1082600.0
+sga,"H. Selling, General, and Administrative Expense Budget",7,Total SG&A expense,Q3,sga.total.Q3,currency,student_input,,1134400.0
+sga,"H. Selling, General, and Administrative Expense Budget",7,Total SG&A expense,Q4,sga.total.Q4,currency,student_input,,1108500.0
+sga,"H. Selling, General, and Administrative Expense Budget",7,Total SG&A expense,Total,sga.total.Total,currency,student_input,,4356300.0
+sga,"H. Selling, General, and Administrative Expense Budget",7,Cash SG&A expense,Q1,sga.cash.Q1,currency,student_input,,990800.0
+sga,"H. Selling, General, and Administrative Expense Budget",7,Cash SG&A expense,Q2,sga.cash.Q2,currency,student_input,,1042600.0
+sga,"H. Selling, General, and Administrative Expense Budget",7,Cash SG&A expense,Q3,sga.cash.Q3,currency,student_input,,1094400.0
+sga,"H. Selling, General, and Administrative Expense Budget",7,Cash SG&A expense,Q4,sga.cash.Q4,currency,student_input,,1068500.0
+sga,"H. Selling, General, and Administrative Expense Budget",7,Cash SG&A expense,Total,sga.cash.Total,currency,student_input,,4196300.0
+cash,Supporting Cash and Financing Schedule,10,Beginning cash balance,Q1,cash.beginning_cash.Q1,currency,student_input,,650000.0
+cash,Supporting Cash and Financing Schedule,10,Beginning cash balance,Q2,cash.beginning_cash.Q2,currency,student_input,,580586.94
+cash,Supporting Cash and Financing Schedule,10,Beginning cash balance,Q3,cash.beginning_cash.Q3,currency,student_input,,540810.36
+cash,Supporting Cash and Financing Schedule,10,Beginning cash balance,Q4,cash.beginning_cash.Q4,currency,student_input,,581392.28
+cash,Supporting Cash and Financing Schedule,10,Total cash available,Q1,cash.total_available.Q1,currency,student_input,,4904000.0
+cash,Supporting Cash and Financing Schedule,10,Total cash available,Q2,cash.total_available.Q2,currency,student_input,,5279586.94
+cash,Supporting Cash and Financing Schedule,10,Total cash available,Q3,cash.total_available.Q3,currency,student_input,,5979810.36
+cash,Supporting Cash and Financing Schedule,10,Total cash available,Q4,cash.total_available.Q4,currency,student_input,,6371892.28
+cash,Supporting Cash and Financing Schedule,10,Income tax payments,Q1,cash.taxes.Q1,currency,student_input,,46233.06
+cash,Supporting Cash and Financing Schedule,10,Income tax payments,Q2,cash.taxes.Q2,currency,student_input,,83938.57
+cash,Supporting Cash and Financing Schedule,10,Income tax payments,Q3,cash.taxes.Q3,currency,student_input,,115884.08
+cash,Supporting Cash and Financing Schedule,10,Income tax payments,Q4,cash.taxes.Q4,currency,student_input,,94151.33
+cash,Supporting Cash and Financing Schedule,10,Income tax payments,Total,cash.taxes.Total,currency,student_input,,340207.05
+cash,Supporting Cash and Financing Schedule,10,Interest payments,Q1,cash.interest.Q1,currency,student_input,,30000.0
+cash,Supporting Cash and Financing Schedule,10,Interest payments,Q2,cash.interest.Q2,currency,student_input,,30000.0
+cash,Supporting Cash and Financing Schedule,10,Interest payments,Q3,cash.interest.Q3,currency,student_input,,54000.0
+cash,Supporting Cash and Financing Schedule,10,Interest payments,Q4,cash.interest.Q4,currency,student_input,,66000.0
+cash,Supporting Cash and Financing Schedule,10,Interest payments,Total,cash.interest.Total,currency,student_input,,180000.0
+cash,Supporting Cash and Financing Schedule,10,Total cash disbursements,Q1,cash.total_disbursements.Q1,currency,student_input,,4323413.06
+cash,Supporting Cash and Financing Schedule,10,Total cash disbursements,Q2,cash.total_disbursements.Q2,currency,student_input,,5938776.57
+cash,Supporting Cash and Financing Schedule,10,Total cash disbursements,Q3,cash.total_disbursements.Q3,currency,student_input,,5998418.08
+cash,Supporting Cash and Financing Schedule,10,Total cash disbursements,Q4,cash.total_disbursements.Q4,currency,student_input,,5340876.33
+cash,Supporting Cash and Financing Schedule,10,Total cash disbursements,Total,cash.total_disbursements.Total,currency,student_input,,21601484.05
+cash,Supporting Cash and Financing Schedule,10,Cash excess (deficiency) before financing,Q1,cash.before_financing.Q1,currency,student_input,,580586.94
+cash,Supporting Cash and Financing Schedule,10,Cash excess (deficiency) before financing,Q2,cash.before_financing.Q2,currency,student_input,,-659189.64
+cash,Supporting Cash and Financing Schedule,10,Cash excess (deficiency) before financing,Q3,cash.before_financing.Q3,currency,student_input,,-18607.72
+cash,Supporting Cash and Financing Schedule,10,Cash excess (deficiency) before financing,Q4,cash.before_financing.Q4,currency,student_input,,1031015.95
+cash,Supporting Cash and Financing Schedule,10,Borrowings,Q1,cash.borrowing.Q1,currency,student_input,,0.0
+cash,Supporting Cash and Financing Schedule,10,Borrowings,Q2,cash.borrowing.Q2,currency,student_input,,1200000.0
+cash,Supporting Cash and Financing Schedule,10,Borrowings,Q3,cash.borrowing.Q3,currency,student_input,,600000.0
+cash,Supporting Cash and Financing Schedule,10,Borrowings,Q4,cash.borrowing.Q4,currency,student_input,,0.0
+cash,Supporting Cash and Financing Schedule,10,Borrowings,Total,cash.borrowing.Total,currency,student_input,,1800000.0
+cash,Supporting Cash and Financing Schedule,10,Repayments,Q1,cash.repayment.Q1,currency,student_input,,0.0
+cash,Supporting Cash and Financing Schedule,10,Repayments,Q2,cash.repayment.Q2,currency,student_input,,0.0
+cash,Supporting Cash and Financing Schedule,10,Repayments,Q3,cash.repayment.Q3,currency,student_input,,0.0
+cash,Supporting Cash and Financing Schedule,10,Repayments,Q4,cash.repayment.Q4,currency,student_input,,500000.0
+cash,Supporting Cash and Financing Schedule,10,Repayments,Total,cash.repayment.Total,currency,student_input,,500000.0
+cash,Supporting Cash and Financing Schedule,10,Ending cash balance,Q1,cash.ending_cash.Q1,currency,student_input,,580586.94
+cash,Supporting Cash and Financing Schedule,10,Ending cash balance,Q2,cash.ending_cash.Q2,currency,student_input,,540810.36
+cash,Supporting Cash and Financing Schedule,10,Ending cash balance,Q3,cash.ending_cash.Q3,currency,student_input,,581392.28
+cash,Supporting Cash and Financing Schedule,10,Ending cash balance,Q4,cash.ending_cash.Q4,currency,student_input,,531015.95
+cash,Supporting Cash and Financing Schedule,10,Ending cash balance,Total,cash.ending_cash.Total,currency,student_input,,531015.95
+cash,Supporting Cash and Financing Schedule,10,Ending line-of-credit balance,Q1,cash.ending_loc.Q1,currency,student_input,,1500000.0
+cash,Supporting Cash and Financing Schedule,10,Ending line-of-credit balance,Q2,cash.ending_loc.Q2,currency,student_input,,2700000.0
+cash,Supporting Cash and Financing Schedule,10,Ending line-of-credit balance,Q3,cash.ending_loc.Q3,currency,student_input,,3300000.0
+cash,Supporting Cash and Financing Schedule,10,Ending line-of-credit balance,Q4,cash.ending_loc.Q4,currency,student_input,,2800000.0
+cash,Supporting Cash and Financing Schedule,10,Ending line-of-credit balance,Total,cash.ending_loc.Total,currency,student_input,,2800000.0
+income,Pro-Forma Income Statement,10,Sales,Q1,income.sales.Q1,currency,student_input,,4440000.0
+income,Pro-Forma Income Statement,10,Sales,Q2,income.sales.Q2,currency,student_input,,5180000.0
+income,Pro-Forma Income Statement,10,Sales,Q3,income.sales.Q3,currency,student_input,,5920000.0
+income,Pro-Forma Income Statement,10,Sales,Q4,income.sales.Q4,currency,student_input,,5550000.0
+income,Pro-Forma Income Statement,10,Sales,Total,income.sales.Total,currency,student_input,,21090000.0
+income,Pro-Forma Income Statement,10,Cost of goods sold,Q1,income.cogs.Q1,currency,student_input,,3186562.24
+income,Pro-Forma Income Statement,10,Cost of goods sold,Q2,income.cogs.Q2,currency,student_input,,3717655.94
+income,Pro-Forma Income Statement,10,Cost of goods sold,Q3,income.cogs.Q3,currency,student_input,,4248749.65
+income,Pro-Forma Income Statement,10,Cost of goods sold,Q4,income.cogs.Q4,currency,student_input,,3983202.8
+income,Pro-Forma Income Statement,10,Cost of goods sold,Total,income.cogs.Total,currency,student_input,,15136170.63
+income,Pro-Forma Income Statement,10,Gross margin,Q1,income.gross_margin.Q1,currency,student_input,,1253437.76
+income,Pro-Forma Income Statement,10,Gross margin,Q2,income.gross_margin.Q2,currency,student_input,,1462344.06
+income,Pro-Forma Income Statement,10,Gross margin,Q3,income.gross_margin.Q3,currency,student_input,,1671250.35
+income,Pro-Forma Income Statement,10,Gross margin,Q4,income.gross_margin.Q4,currency,student_input,,1566797.2
+income,Pro-Forma Income Statement,10,Gross margin,Total,income.gross_margin.Total,currency,student_input,,5953829.37
+income,Pro-Forma Income Statement,10,"Selling, general, and administrative expense",Q1,income.sga.Q1,currency,student_input,,1030800.0
+income,Pro-Forma Income Statement,10,"Selling, general, and administrative expense",Q2,income.sga.Q2,currency,student_input,,1082600.0
+income,Pro-Forma Income Statement,10,"Selling, general, and administrative expense",Q3,income.sga.Q3,currency,student_input,,1134400.0
+income,Pro-Forma Income Statement,10,"Selling, general, and administrative expense",Q4,income.sga.Q4,currency,student_input,,1108500.0
+income,Pro-Forma Income Statement,10,"Selling, general, and administrative expense",Total,income.sga.Total,currency,student_input,,4356300.0
+income,Pro-Forma Income Statement,10,Operating income,Q1,income.operating_income.Q1,currency,student_input,,222637.76
+income,Pro-Forma Income Statement,10,Operating income,Q2,income.operating_income.Q2,currency,student_input,,379744.06
+income,Pro-Forma Income Statement,10,Operating income,Q3,income.operating_income.Q3,currency,student_input,,536850.35
+income,Pro-Forma Income Statement,10,Operating income,Q4,income.operating_income.Q4,currency,student_input,,458297.2
+income,Pro-Forma Income Statement,10,Operating income,Total,income.operating_income.Total,currency,student_input,,1597529.37
+income,Pro-Forma Income Statement,10,Interest expense,Q1,income.interest.Q1,currency,student_input,,30000.0
+income,Pro-Forma Income Statement,10,Interest expense,Q2,income.interest.Q2,currency,student_input,,30000.0
+income,Pro-Forma Income Statement,10,Interest expense,Q3,income.interest.Q3,currency,student_input,,54000.0
+income,Pro-Forma Income Statement,10,Interest expense,Q4,income.interest.Q4,currency,student_input,,66000.0
+income,Pro-Forma Income Statement,10,Interest expense,Total,income.interest.Total,currency,student_input,,180000.0
+income,Pro-Forma Income Statement,10,Income before taxes,Q1,income.pretax.Q1,currency,student_input,,192637.76
+income,Pro-Forma Income Statement,10,Income before taxes,Q2,income.pretax.Q2,currency,student_input,,349744.06
+income,Pro-Forma Income Statement,10,Income before taxes,Q3,income.pretax.Q3,currency,student_input,,482850.35
+income,Pro-Forma Income Statement,10,Income before taxes,Q4,income.pretax.Q4,currency,student_input,,392297.2
+income,Pro-Forma Income Statement,10,Income before taxes,Total,income.pretax.Total,currency,student_input,,1417529.37
+income,Pro-Forma Income Statement,10,Income tax expense,Q1,income.taxes.Q1,currency,student_input,,46233.06
+income,Pro-Forma Income Statement,10,Income tax expense,Q2,income.taxes.Q2,currency,student_input,,83938.57
+income,Pro-Forma Income Statement,10,Income tax expense,Q3,income.taxes.Q3,currency,student_input,,115884.08
+income,Pro-Forma Income Statement,10,Income tax expense,Q4,income.taxes.Q4,currency,student_input,,94151.33
+income,Pro-Forma Income Statement,10,Income tax expense,Total,income.taxes.Total,currency,student_input,,340207.05
+income,Pro-Forma Income Statement,10,Net income,Q1,income.net_income.Q1,currency,student_input,,146404.7
+income,Pro-Forma Income Statement,10,Net income,Q2,income.net_income.Q2,currency,student_input,,265805.48
+income,Pro-Forma Income Statement,10,Net income,Q3,income.net_income.Q3,currency,student_input,,366966.27
+income,Pro-Forma Income Statement,10,Net income,Q4,income.net_income.Q4,currency,student_input,,298145.87
+income,Pro-Forma Income Statement,10,Net income,Total,income.net_income.Total,currency,student_input,,1077322.32
+balance,"Pro-Forma Balance Sheet — December 31, 2027",8,Cash,Total,balance.cash.Total,currency,student_input,,531015.95
+balance,"Pro-Forma Balance Sheet — December 31, 2027",8,Accounts receivable,Total,balance.accounts_receivable.Total,currency,student_input,,3607500.0
+balance,"Pro-Forma Balance Sheet — December 31, 2027",8,Raw-material inventory,Total,balance.raw_materials.Total,currency,student_input,,150822.0
+balance,"Pro-Forma Balance Sheet — December 31, 2027",8,Finished-goods inventory,Total,balance.finished_goods.Total,currency,student_input,,690421.82
+balance,"Pro-Forma Balance Sheet — December 31, 2027",8,Total current assets,Total,balance.total_current_assets.Total,currency,student_input,,4979759.77
+balance,"Pro-Forma Balance Sheet — December 31, 2027",8,"Gross property, plant, and equipment",Total,balance.gross_ppe.Total,currency,student_input,,14050000.0
+balance,"Pro-Forma Balance Sheet — December 31, 2027",8,Accumulated depreciation,Total,balance.accumulated_depreciation.Total,currency,student_input,,5080000.0
+balance,"Pro-Forma Balance Sheet — December 31, 2027",8,"Net property, plant, and equipment",Total,balance.net_ppe.Total,currency,student_input,,8970000.0
+balance,"Pro-Forma Balance Sheet — December 31, 2027",8,Total assets,Total,balance.total_assets.Total,currency,student_input,,13949759.77
+balance,"Pro-Forma Balance Sheet — December 31, 2027",8,Accounts payable,Total,balance.accounts_payable.Total,currency,student_input,,544509.0
+balance,"Pro-Forma Balance Sheet — December 31, 2027",8,Line of credit,Total,balance.line_of_credit.Total,currency,student_input,,2800000.0
+balance,"Pro-Forma Balance Sheet — December 31, 2027",8,Total liabilities,Total,balance.total_liabilities.Total,currency,student_input,,3344509.0
+balance,"Pro-Forma Balance Sheet — December 31, 2027",8,Common stock,Total,balance.common_stock.Total,currency,student_input,,4000000.0
+balance,"Pro-Forma Balance Sheet — December 31, 2027",8,Retained earnings,Total,balance.retained_earnings.Total,currency,student_input,,6605250.77
+balance,"Pro-Forma Balance Sheet — December 31, 2027",8,Total stockholders' equity,Total,balance.total_equity.Total,currency,student_input,,10605250.77
+balance,"Pro-Forma Balance Sheet — December 31, 2027",8,Total liabilities and equity,Total,balance.total_liabilities_equity.Total,currency,student_input,,13949759.77
+cashflow,Pro-Forma Statement of Cash Flows — Indirect Method,7,Net income,Total,cashflow.net_income.Total,currency,student_input,,1077322.32
+cashflow,Pro-Forma Statement of Cash Flows — Indirect Method,7,Depreciation expense,Total,cashflow.depreciation.Total,currency,student_input,,880000.0
+cashflow,Pro-Forma Statement of Cash Flows — Indirect Method,7,Increase in accounts receivable,Total,cashflow.increase_ar.Total,currency,student_input,,-907500.0
+cashflow,Pro-Forma Statement of Cash Flows — Indirect Method,7,Increase in raw-material inventory,Total,cashflow.increase_rm.Total,currency,student_input,,-10206.0
+cashflow,Pro-Forma Statement of Cash Flows — Indirect Method,7,Increase in finished-goods inventory,Total,cashflow.increase_fg.Total,currency,student_input,,-53109.37
+cashflow,Pro-Forma Statement of Cash Flows — Indirect Method,7,Increase in accounts payable,Total,cashflow.increase_ap.Total,currency,student_input,,44509.0
+cashflow,Pro-Forma Statement of Cash Flows — Indirect Method,7,Net cash provided by operating activities,Total,cashflow.cfo.Total,currency,student_input,,1031015.95
+cashflow,Pro-Forma Statement of Cash Flows — Indirect Method,7,Capital expenditures,Total,cashflow.capex.Total,currency,student_input,,-2050000.0
+cashflow,Pro-Forma Statement of Cash Flows — Indirect Method,7,Net cash used in investing activities,Total,cashflow.cfi.Total,currency,student_input,,-2050000.0
+cashflow,Pro-Forma Statement of Cash Flows — Indirect Method,7,Borrowings,Total,cashflow.borrowings.Total,currency,student_input,,1800000.0
+cashflow,Pro-Forma Statement of Cash Flows — Indirect Method,7,Debt repayments,Total,cashflow.repayments.Total,currency,student_input,,-500000.0
+cashflow,Pro-Forma Statement of Cash Flows — Indirect Method,7,Dividends paid,Total,cashflow.dividends.Total,currency,student_input,,-400000.0
+cashflow,Pro-Forma Statement of Cash Flows — Indirect Method,7,Net cash provided by financing activities,Total,cashflow.cff.Total,currency,student_input,,900000.0
+cashflow,Pro-Forma Statement of Cash Flows — Indirect Method,7,Net change in cash,Total,cashflow.net_change_cash.Total,currency,student_input,,-118984.05
+cashflow,Pro-Forma Statement of Cash Flows — Indirect Method,7,Beginning cash,Total,cashflow.beginning_cash.Total,currency,student_input,,650000.0
+cashflow,Pro-Forma Statement of Cash Flows — Indirect Method,7,Ending cash,Total,cashflow.ending_cash.Total,currency,student_input,,531015.95

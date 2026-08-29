@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Northbridge MBA Budget Simulation — Semester Launcher</title>
+<style>body{font-family:Arial,sans-serif;background:#f3f7fa;color:#172b4d;margin:0}.card{max-width:700px;margin:8vh auto;background:#fff;padding:32px;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.12)}h1{color:#102a43}label{display:block;font-weight:700;margin:20px 0 8px}input{width:100%;box-sizing:border-box;padding:12px;border:1px solid #9fb3c8;border-radius:7px;font-size:16px}button{margin-top:18px;padding:12px 18px;border:0;border-radius:7px;background:#102a43;color:#fff;font-weight:700;cursor:pointer}.secondary{background:#486581}.muted{color:#627d98;font-size:.95rem}.row{display:flex;gap:10px;flex-wrap:wrap}</style></head><body><main class="card">
+<p class="muted">Graduate Managerial Accounting Simulation</p><h1>Northbridge Components MBA Master Budget</h1>
+<p>Enter the secure semester simulation address supplied by your instructor. This launcher stores only that address on this computer; your actual budget work remains in the instructor's semester simulation database.</p>
+<label for="url">Instructor-provided HTTPS simulation address</label><input id="url" type="url" placeholder="https://budget.example.edu" autocomplete="url">
+<div class="row"><button id="launch">Open Simulation</button><button id="clear" class="secondary" type="button">Forget Saved Address</button></div>
+<p id="status" class="muted"></p></main>
+<script>
+const key='northbridge_budget_simulation_url'; const input=document.getElementById('url'); const status=document.getElementById('status');
+input.value=localStorage.getItem(key)||'';
+document.getElementById('launch').addEventListener('click',()=>{let v=input.value.trim(); if(!v){status.textContent='Enter the simulation address supplied by your instructor.';return;} try{const u=new URL(v); if(u.protocol!=='https:'){status.textContent='For semester Canvas use, enter an HTTPS address.';return;} localStorage.setItem(key,u.href.replace(/\/$/,'')); window.open(u.href,'_blank','noopener'); status.textContent='Simulation opened in a new browser tab.';}catch(e){status.textContent='Enter a valid web address.';}});
+document.getElementById('clear').addEventListener('click',()=>{localStorage.removeItem(key); input.value=''; status.textContent='Saved address removed.';});
+</script></body></html>
