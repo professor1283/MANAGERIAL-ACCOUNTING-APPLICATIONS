@@ -31,12 +31,39 @@ STATIC_DIR = BASE_DIR / "static"
 DATA_DIR = BASE_DIR / "data"
 DB_PATH = Path(os.environ.get("BUDGET_SIM_DB", DATA_DIR / "budget_simulation.db"))
 HOST = os.environ.get("BUDGET_SIM_HOST", "0.0.0.0")
-PORT = int(os.environ.get("BUDGET_SIM_PORT", "8080"))
+PORT = int(os.environ.get("BUDGET_SIM_PORT") or os.environ.get("PORT", "8080"))
 SESSION_TTL_SECONDS = 12 * 60 * 60
 SESSIONS: Dict[str, Dict[str, Any]] = {}
 SESSIONS_LOCK = threading.Lock()
 CANVAS_EMBED = os.environ.get("BUDGET_SIM_CANVAS_EMBED", "0").strip().lower() in {"1", "true", "yes", "on"}
 SECURE_COOKIES = os.environ.get("BUDGET_SIM_SECURE_COOKIES", "0").strip().lower() in {"1", "true", "yes", "on"}
+
+STUDENT_ROSTER_NAMES = (
+    "Daisy Aguilar",
+    "Blhetia Bell",
+    "Dewi Benham",
+    "Millaun Brown",
+    "Addilyn Dickerson",
+    "Aerial Glasper",
+    "Janya Gonzalez Galeano",
+    "Tim Groenenberg",
+    "Aidan Hayes",
+    "Kelly Kirkland",
+    "Maximus Mccarter",
+    "John McCracken",
+    "Aleksa Millentijevic",
+    "Elliot Nixon",
+    "Jullie Payne",
+    "Pavle Popsavin",
+    "Sofija Rajic",
+    "Carson Robinette",
+    "Daniel Dantema",
+    "Julia Santiago",
+    "Ronish Shrestha",
+    "Jade Simmons",
+    "Tania Varillas",
+    "Mateus Vezzoni Franco",
+)
 
 
 def now_iso() -> str:
@@ -45,6 +72,7 @@ def now_iso() -> str:
 
 def db_connect() -> sqlite3.Connection:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
@@ -67,6 +95,65 @@ def verify_password(password: str, stored: str) -> bool:
         return hmac.compare_digest(digest.hex(), digest_hex)
     except Exception:
         return False
+
+
+def is_five_digit_password(password: str) -> bool:
+    return len(password) == 5 and all("0" <= ch <= "9" for ch in password)
+
+
+def student_username_from_name(name: str) -> str:
+    base = "".join(ch.lower() if ch.isalnum() else "." for ch in name.strip())
+    while ".." in base:
+        base = base.replace("..", ".")
+    return base.strip(".") or "student"
+
+
+def ensure_roster_student(conn: sqlite3.Connection, scenario_id: int, student_name: str) -> int:
+    existing_roster = conn.execute(
+        "SELECT student_id, user_id FROM student_roster WHERE lower(trim(student_name))=lower(trim(?))",
+        (student_name,),
+    ).fetchone()
+    if existing_roster:
+        conn.execute(
+            "UPDATE student_roster SET student_name=?, active=1 WHERE student_id=?",
+            (student_name, existing_roster["student_id"]),
+        )
+        conn.execute(
+            "UPDATE users SET display_name=?, active=1, scenario_id=? WHERE user_id=?",
+            (student_name, scenario_id, existing_roster["user_id"]),
+        )
+        return int(existing_roster["user_id"])
+
+    existing_user = conn.execute(
+        "SELECT user_id FROM users WHERE role='student' AND lower(trim(display_name))=lower(trim(?)) ORDER BY user_id LIMIT 1",
+        (student_name,),
+    ).fetchone()
+    if existing_user:
+        user_id = int(existing_user["user_id"])
+        conn.execute(
+            "UPDATE users SET display_name=?, active=1, scenario_id=? WHERE user_id=?",
+            (student_name, scenario_id, user_id),
+        )
+    else:
+        base_username = student_username_from_name(student_name)
+        username = base_username
+        suffix = 2
+        while conn.execute("SELECT 1 FROM users WHERE username=?", (username,)).fetchone():
+            username = f"{base_username}.{suffix}"
+            suffix += 1
+        cur = conn.execute(
+            """INSERT INTO users(username, display_name, role, password_hash, active, scenario_id, created_at)
+            VALUES (?, ?, 'student', '', 1, ?, ?)""",
+            (username, student_name, scenario_id, now_iso()),
+        )
+        user_id = int(cur.lastrowid)
+
+    conn.execute(
+        """INSERT INTO student_roster(user_id, student_name, password, active, created_at)
+        VALUES (?, ?, NULL, 1, ?)""",
+        (user_id, student_name, now_iso()),
+    )
+    return user_id
 
 
 def init_db() -> None:
@@ -115,19 +202,26 @@ def init_db() -> None:
                 (json.dumps(ASSUMPTIONS), json.dumps(SCHEDULES), json.dumps(SOLUTION), scenario_id),
             )
 
-        defaults = [
-            ("professor", "Professor", "professor", os.environ.get("BUDGET_SIM_PROFESSOR_PASSWORD", "3150")),
-            ("mba.student", "MBA Student", "student", os.environ.get("BUDGET_SIM_DEMO_STUDENT_PASSWORD", "budget2027")),
-        ]
-        for username, display_name, role, password in defaults:
-            exists = conn.execute("SELECT user_id FROM users WHERE username=?", (username,)).fetchone()
-            if not exists:
-                conn.execute(
-                    """INSERT INTO users
-                    (username, display_name, role, password_hash, active, scenario_id, created_at)
-                    VALUES (?, ?, ?, ?, 1, ?, ?)""",
-                    (username, display_name, role, hash_password(password), scenario_id, now_iso()),
-                )
+        professor_password = os.environ.get("BUDGET_SIM_PROFESSOR_PASSWORD", "3150")
+        professor = conn.execute("SELECT user_id FROM users WHERE username='professor'").fetchone()
+        if not professor:
+            conn.execute(
+                """INSERT INTO users
+                (username, display_name, role, password_hash, active, scenario_id, created_at)
+                VALUES ('professor', 'Professor', 'professor', ?, 1, ?, ?)""",
+                (hash_password(professor_password), scenario_id, now_iso()),
+            )
+        else:
+            conn.execute(
+                "UPDATE users SET display_name='Professor', role='professor', active=1, scenario_id=? WHERE user_id=?",
+                (scenario_id, professor["user_id"]),
+            )
+
+        # The former demonstration student is no longer a valid student-access path.
+        conn.execute("UPDATE users SET active=0 WHERE username='mba.student' AND role='student'")
+
+        for student_name in STUDENT_ROSTER_NAMES:
+            ensure_roster_student(conn, scenario_id, student_name)
         settings = {
             "max_attempts": "3",
             "passing_score": "80",
@@ -435,13 +529,16 @@ class Handler(BaseHTTPRequestHandler):
                 return
             with db_connect() as conn:
                 rows = conn.execute(
-                    """SELECT u.user_id, u.username, u.display_name, u.active,
+                    """SELECT u.user_id, u.username, sr.student_name AS display_name, sr.password, sr.password_created_at, sr.active,
                     COUNT(s.submission_id) AS attempts,
                     MAX(s.score) AS best_score,
                     MAX(s.submitted_at) AS last_submitted
-                    FROM users u LEFT JOIN submissions s ON s.user_id=u.user_id
-                    WHERE u.role='student'
-                    GROUP BY u.user_id ORDER BY u.display_name"""
+                    FROM student_roster sr
+                    JOIN users u ON u.user_id=sr.user_id
+                    LEFT JOIN submissions s ON s.user_id=u.user_id
+                    WHERE sr.active=1
+                    GROUP BY sr.student_id, u.user_id
+                    ORDER BY sr.student_name"""
                 ).fetchall()
                 settings = {r["setting_key"]: r["setting_value"] for r in conn.execute("SELECT * FROM app_settings")}
             self._send_json({"students": [dict(r) for r in rows], "settings": settings})
@@ -518,18 +615,61 @@ class Handler(BaseHTTPRequestHandler):
 
     def _api_post(self, path: str, data: Dict[str, Any]) -> None:
         if path == "/api/login":
-            username = str(data.get("username", "")).strip().lower()
+            login_name = str(data.get("name", data.get("username", ""))).strip()
             password = str(data.get("password", ""))
+            password_created = False
             with db_connect() as conn:
-                user = conn.execute("SELECT * FROM users WHERE username=? AND active=1", (username,)).fetchone()
-                if not user or not verify_password(password, user["password_hash"]):
-                    self._send_json({"error": "Invalid username or password"}, 401)
-                    return
-                conn.execute("INSERT INTO audit_log(user_id, action, details_json, created_at) VALUES (?, 'LOGIN', ?, ?)", (user["user_id"], json.dumps({"ip": self.client_address[0]}), now_iso()))
+                if login_name.lower() == "professor":
+                    user = conn.execute("SELECT * FROM users WHERE username='professor' AND active=1").fetchone()
+                    if not user or not verify_password(password, user["password_hash"] or ""):
+                        self._send_json({"error": "Invalid professor name or password"}, 401)
+                        return
+                else:
+                    if not is_five_digit_password(password):
+                        self._send_json({"error": "Student passwords must contain exactly five numerical digits"}, 400)
+                        return
+                    roster = conn.execute(
+                        """SELECT sr.*, u.* FROM student_roster sr
+                        JOIN users u ON u.user_id=sr.user_id
+                        WHERE sr.active=1 AND u.active=1
+                        AND lower(trim(sr.student_name))=lower(trim(?))
+                        LIMIT 1""",
+                        (login_name,),
+                    ).fetchone()
+                    if not roster:
+                        self._send_json({"error": "Student name was not found on the authorized class roster"}, 401)
+                        return
+                    stored_password = roster["password"]
+                    if stored_password is None or str(stored_password) == "":
+                        conn.execute(
+                            "UPDATE student_roster SET password=?, password_created_at=? WHERE student_id=?",
+                            (password, now_iso(), roster["student_id"]),
+                        )
+                        password_created = True
+                    elif not hmac.compare_digest(str(stored_password), password):
+                        self._send_json({"error": "Invalid student name or password"}, 401)
+                        return
+                    user = conn.execute("SELECT * FROM users WHERE user_id=? AND active=1", (roster["user_id"],)).fetchone()
+                    if not user:
+                        self._send_json({"error": "Student account is inactive"}, 403)
+                        return
+                conn.execute(
+                    "INSERT INTO audit_log(user_id, action, details_json, created_at) VALUES (?, ?, ?, ?)",
+                    (
+                        user["user_id"],
+                        "STUDENT_PASSWORD_CREATED" if password_created else "LOGIN",
+                        json.dumps({"ip": self.client_address[0]}),
+                        now_iso(),
+                    ),
+                )
                 conn.commit()
             token = make_session(user)
             self._send_json(
-                {"ok": True, "user": {"username": user["username"], "display_name": user["display_name"], "role": user["role"]}},
+                {
+                    "ok": True,
+                    "password_created": password_created,
+                    "user": {"username": user["username"], "display_name": user["display_name"], "role": user["role"]},
+                },
                 cookies=[session_cookie(token)],
             )
             return
@@ -615,22 +755,26 @@ class Handler(BaseHTTPRequestHandler):
             session = self._require("professor")
             if not session:
                 return
-            username = str(data.get("username", "")).strip().lower()
             display_name = str(data.get("display_name", "")).strip()
-            password = str(data.get("password", ""))
-            if not username or not display_name or len(password) < 6:
-                self._send_json({"error": "Username, display name, and a password of at least 6 characters are required"}, 400)
+            if not display_name:
+                self._send_json({"error": "Student name is required"}, 400)
                 return
             try:
                 with db_connect() as conn:
+                    if conn.execute(
+                        "SELECT 1 FROM student_roster WHERE lower(trim(student_name))=lower(trim(?))",
+                        (display_name,),
+                    ).fetchone():
+                        self._send_json({"error": "That student is already in the Student Table"}, 409)
+                        return
+                    ensure_roster_student(conn, session["scenario_id"], display_name)
                     conn.execute(
-                        """INSERT INTO users(username, display_name, role, password_hash, active, scenario_id, created_at)
-                        VALUES (?, ?, 'student', ?, 1, ?, ?)""",
-                        (username, display_name, hash_password(password), session["scenario_id"], now_iso()),
+                        "INSERT INTO audit_log(user_id, action, details_json, created_at) VALUES (?, 'PROFESSOR_ADD_STUDENT', ?, ?)",
+                        (session["user_id"], json.dumps({"student_name": display_name}), now_iso()),
                     )
                     conn.commit()
             except sqlite3.IntegrityError:
-                self._send_json({"error": "That username already exists"}, 409)
+                self._send_json({"error": "That student could not be added"}, 409)
                 return
             self._send_json({"ok": True})
             return
@@ -743,8 +887,8 @@ def run() -> None:
     print("\nNorthbridge Components MBA Budget Simulation")
     print(f"Open locally: {url}")
     print(f"Network access: http://<this-computer-IP>:{PORT}")
-    print("Default professor login: professor / 3150")
-    print("Default student login: mba.student / budget2027")
+    print("Professor login name: Professor")
+    print(f"Student roster loaded: {len(STUDENT_ROSTER_NAMES)} students; first login creates a five-digit numerical password")
     print("Press Ctrl+C to stop.\n")
     if os.environ.get("BUDGET_SIM_NO_BROWSER") != "1":
         threading.Timer(1.0, lambda: webbrowser.open(url)).start()
