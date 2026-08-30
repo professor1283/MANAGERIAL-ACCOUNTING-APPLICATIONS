@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS student_roster (
     active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0,1)),
     created_at TEXT NOT NULL,
     password_created_at TEXT,
+    access_claimed_at TEXT,
     CHECK (password IS NULL OR (length(password)=5 AND password NOT GLOB '*[^0-9]*')),
     FOREIGN KEY (professor_user_id) REFERENCES users(user_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE

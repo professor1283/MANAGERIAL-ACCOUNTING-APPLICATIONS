@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset="utf-8"><title>SQLite Schema</title><style>body{font-family:Arial,sans-serif;margin:32px;color:#1f2937}pre{background:#0f172a;color:#e2e8f0;padding:20px;overflow:auto;border-radius:8px;white-space:pre-wrap}code{font-family:Consolas,monospace}</style></head><body><h1>Graduate Company Budget Simulation — SQLite Schema</h1><p>Professor-owned Student Tables are represented relationally by <code>student_roster.professor_user_id</code>; professor-specific assignment policies are stored in <code>professor_settings</code>.</p><pre><code>PRAGMA foreign_keys = ON;
+<!doctype html><html><head><meta charset="utf-8"><title>SQLite Schema</title><style>body{font-family:Arial,sans-serif;margin:32px;color:#1f2937}pre{background:#0f172a;color:#e2e8f0;padding:20px;overflow:auto;border-radius:8px;white-space:pre-wrap}code{font-family:Consolas,monospace}</style></head><body><h1>Graduate Company Budget Simulation — SQLite Schema</h1><p>Professor-owned Student Tables are represented relationally by <code>student_roster.professor_user_id</code>; professor-specific assignment policies are stored in <code>professor_settings</code>. <code>student_roster.access_claimed_at</code> records successful first-time password activation.</p><pre><code>PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS scenarios (
     scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS student_roster (
     active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0,1)),
     created_at TEXT NOT NULL,
     password_created_at TEXT,
+    access_claimed_at TEXT,
     CHECK (password IS NULL OR (length(password)=5 AND password NOT GLOB &#x27;*[^0-9]*&#x27;)),
     FOREIGN KEY (professor_user_id) REFERENCES users(user_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
