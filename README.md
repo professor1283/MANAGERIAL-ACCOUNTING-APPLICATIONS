@@ -34,6 +34,7 @@ Run `./Launch_Budget_Simulation.sh`.
 - Professor access: `Professor` uses the existing password (local default `3150`, or `BUDGET_SIM_PROFESSOR_PASSWORD` for hosted use). Two additional professor accounts are `Professor 1` / `12345` and `Professor 2` / `12345`.
 - Students: the original Professor Student Table is preloaded from the supplied course roster; Professor 1 and Professor 2 begin with independent empty Student Tables. On first access, a rostered student enters the exact roster name and creates a five-digit numerical password. The same five digits are required on later visits.
 - Student passwords are intentionally stored as plain-text five-character digit strings in `student_roster.password`, as configured for this course.
+- First-time access is tracked in `student_roster.access_claimed_at`. A one-time Render migration clears stale pre-course passwords only for roster rows with no saved assignment activity, preventing old instructor testing from blocking a student's first real login.
 
 ## Web access
 

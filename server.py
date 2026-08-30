@@ -202,6 +202,10 @@ def init_db() -> None:
         roster_columns = {row["name"] for row in conn.execute("PRAGMA table_info(student_roster)").fetchall()}
         if "professor_user_id" not in roster_columns:
             conn.execute("ALTER TABLE student_roster ADD COLUMN professor_user_id INTEGER")
+        if "password_created_at" not in roster_columns:
+            conn.execute("ALTER TABLE student_roster ADD COLUMN password_created_at TEXT")
+        if "access_claimed_at" not in roster_columns:
+            conn.execute("ALTER TABLE student_roster ADD COLUMN access_claimed_at TEXT")
 
         scenario = conn.execute("SELECT scenario_id FROM scenarios WHERE scenario_code = ?", ("NBI-2027-MBA",)).fetchone()
         if not scenario:
@@ -330,6 +334,50 @@ def init_db() -> None:
             conn.execute(
                 "INSERT INTO app_settings(setting_key, setting_value) VALUES ('student_roster_seeded', '1')"
             )
+
+        # One-time repair for persistent Render databases created by earlier releases.
+        # A browser's InPrivate mode does not clear server-side SQLite data, so a password
+        # left behind by instructor testing could make a genuinely first-time student look
+        # like a returning student and cause an 'invalid password' response.  On this one
+        # migration only, clear a stored roster password when the student has never begun
+        # assignment activity.  Passwords for students with saved entries, submissions, or
+        # support-tool activity are preserved.  The migration marker prevents future Render
+        # restarts/redeployments from clearing newly created passwords.
+        first_access_repair = conn.execute(
+            "SELECT setting_value FROM app_settings WHERE setting_key='student_first_access_repair_v3'"
+        ).fetchone()
+        if first_access_repair is None:
+            stale_rows = conn.execute(
+                """SELECT sr.student_id, sr.user_id
+                FROM student_roster sr
+                WHERE sr.password IS NOT NULL AND trim(sr.password) <> ''
+                  AND NOT EXISTS (SELECT 1 FROM student_entries se WHERE se.user_id=sr.user_id)
+                  AND NOT EXISTS (SELECT 1 FROM submissions s WHERE s.user_id=sr.user_id)
+                  AND NOT EXISTS (SELECT 1 FROM student_support_events ev WHERE ev.user_id=sr.user_id)"""
+            ).fetchall()
+            for stale in stale_rows:
+                conn.execute(
+                    "UPDATE student_roster SET password=NULL, password_created_at=NULL, access_claimed_at=NULL WHERE student_id=?",
+                    (stale["student_id"],),
+                )
+                conn.execute(
+                    "INSERT INTO audit_log(user_id, action, details_json, created_at) VALUES (?, 'FIRST_ACCESS_PASSWORD_REPAIR', ?, ?)",
+                    (stale["user_id"], json.dumps({"reason": "cleared stale pre-course password during v3 migration"}), now_iso()),
+                )
+            conn.execute(
+                "INSERT INTO app_settings(setting_key, setting_value) VALUES ('student_first_access_repair_v3', '1')"
+            )
+
+        # Backfill the explicit claimed-access marker for students whose prior activity
+        # proves that their existing password belongs to an active assignment record.
+        conn.execute(
+            """UPDATE student_roster
+            SET access_claimed_at=COALESCE(access_claimed_at, password_created_at, created_at)
+            WHERE password IS NOT NULL AND trim(password) <> '' AND access_claimed_at IS NULL
+              AND (EXISTS (SELECT 1 FROM student_entries se WHERE se.user_id=student_roster.user_id)
+                   OR EXISTS (SELECT 1 FROM submissions s WHERE s.user_id=student_roster.user_id)
+                   OR EXISTS (SELECT 1 FROM student_support_events ev WHERE ev.user_id=student_roster.user_id))"""
+        )
         conn.commit()
 
 
@@ -990,9 +1038,10 @@ class Handler(BaseHTTPRequestHandler):
                         return
                     stored_password = roster["password"]
                     if stored_password is None or str(stored_password) == "":
+                        claimed_at = now_iso()
                         conn.execute(
-                            "UPDATE student_roster SET password=?, password_created_at=? WHERE student_id=?",
-                            (password, now_iso(), roster["student_id"]),
+                            "UPDATE student_roster SET password=?, password_created_at=?, access_claimed_at=? WHERE student_id=?",
+                            (password, claimed_at, claimed_at, roster["student_id"]),
                         )
                         password_created = True
                     elif not hmac.compare_digest(str(stored_password), password):
@@ -1299,7 +1348,7 @@ class Handler(BaseHTTPRequestHandler):
                     self._send_json({"error": "Student was not found in the active Student Table"}, 404)
                     return
                 conn.execute(
-                    "UPDATE student_roster SET password=NULL, password_created_at=NULL WHERE student_id=?",
+                    "UPDATE student_roster SET password=NULL, password_created_at=NULL, access_claimed_at=NULL WHERE student_id=?",
                     (roster["student_id"],),
                 )
                 conn.execute(
