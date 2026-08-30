@@ -230,27 +230,47 @@ def init_db() -> None:
                 (json.dumps(ASSUMPTIONS), json.dumps(SCHEDULES), json.dumps(SOLUTION), scenario_id),
             )
 
-        professor_password = os.environ.get("BUDGET_SIM_PROFESSOR_PASSWORD", "3150")
+        # Keep professor credentials synchronized with the credentials configured for
+        # this deployment. Render preserves the SQLite database on the persistent disk,
+        # so a password hash created by an older release can otherwise survive a
+        # redeploy and reject the documented login in a fresh/InPrivate browser session.
+        #
+        # The original Professor account follows BUDGET_SIM_PROFESSOR_PASSWORD when
+        # that environment variable is explicitly configured. If it is not configured,
+        # an existing password is preserved; a brand-new database uses the historical
+        # local default of 3150. Professor 1 and Professor 2 are always synchronized to
+        # their required password of 12345.
+        professor_password_env = os.environ.get("BUDGET_SIM_PROFESSOR_PASSWORD")
+        professor_password = professor_password_env if professor_password_env is not None else "3150"
         professor_accounts = (
-            ("professor", "Professor", professor_password),
-            ("professor1", "Professor 1", "12345"),
-            ("professor2", "Professor 2", "12345"),
+            ("professor", "Professor", professor_password, professor_password_env is not None),
+            ("professor1", "Professor 1", "12345", True),
+            ("professor2", "Professor 2", "12345", True),
         )
         professor_ids: Dict[str, int] = {}
-        for username, display_name, initial_password in professor_accounts:
-            professor = conn.execute("SELECT user_id FROM users WHERE username=?", (username,)).fetchone()
+        for username, display_name, required_password, synchronize_password in professor_accounts:
+            professor = conn.execute(
+                "SELECT user_id, password_hash FROM users WHERE username=?",
+                (username,),
+            ).fetchone()
             if not professor:
                 cur = conn.execute(
                     """INSERT INTO users
                     (username, display_name, role, password_hash, active, scenario_id, created_at)
                     VALUES (?, ?, 'professor', ?, 1, ?, ?)""",
-                    (username, display_name, hash_password(initial_password), scenario_id, now_iso()),
+                    (username, display_name, hash_password(required_password), scenario_id, now_iso()),
                 )
                 professor_ids[username] = int(cur.lastrowid)
             else:
+                password_hash = professor["password_hash"] or ""
+                replacement_hash = password_hash
+                if synchronize_password and not verify_password(required_password, password_hash):
+                    replacement_hash = hash_password(required_password)
                 conn.execute(
-                    "UPDATE users SET display_name=?, role='professor', active=1, scenario_id=? WHERE user_id=?",
-                    (display_name, scenario_id, professor["user_id"]),
+                    """UPDATE users
+                    SET display_name=?, role='professor', password_hash=?, active=1, scenario_id=?
+                    WHERE user_id=?""",
+                    (display_name, replacement_hash, scenario_id, professor["user_id"]),
                 )
                 professor_ids[username] = int(professor["user_id"])
 
