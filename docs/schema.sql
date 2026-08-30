@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS student_roster (
     student_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    professor_user_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL UNIQUE,
     student_name TEXT NOT NULL UNIQUE,
     password TEXT,
@@ -37,7 +38,16 @@ CREATE TABLE IF NOT EXISTS student_roster (
     created_at TEXT NOT NULL,
     password_created_at TEXT,
     CHECK (password IS NULL OR (length(password)=5 AND password NOT GLOB '*[^0-9]*')),
+    FOREIGN KEY (professor_user_id) REFERENCES users(user_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS student_roster_clear_log (
+    clear_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    professor_user_id INTEGER NOT NULL,
+    students_removed INTEGER NOT NULL DEFAULT 0,
+    cleared_at TEXT NOT NULL,
+    FOREIGN KEY (professor_user_id) REFERENCES users(user_id)
 );
 
 CREATE TABLE IF NOT EXISTS student_entries (
@@ -61,6 +71,8 @@ CREATE TABLE IF NOT EXISTS submissions (
     scenario_id INTEGER NOT NULL,
     attempt_number INTEGER NOT NULL,
     score REAL NOT NULL,
+    raw_score REAL,
+    penalty_points REAL NOT NULL DEFAULT 0,
     entries_json TEXT NOT NULL,
     grading_json TEXT NOT NULL,
     submitted_at TEXT NOT NULL,
@@ -79,6 +91,28 @@ CREATE TABLE IF NOT EXISTS submission_schedule_scores (
     correct_cells INTEGER NOT NULL,
     possible_cells INTEGER NOT NULL,
     FOREIGN KEY (submission_id) REFERENCES submissions(submission_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS student_support_events (
+    support_event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    scenario_id INTEGER NOT NULL,
+    schedule_id TEXT NOT NULL,
+    event_type TEXT NOT NULL CHECK (event_type IN ('assistance','check_work')),
+    penalty_points REAL NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    UNIQUE (user_id, scenario_id, schedule_id, event_type),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (scenario_id) REFERENCES scenarios(scenario_id)
+);
+
+
+CREATE TABLE IF NOT EXISTS professor_settings (
+    professor_user_id INTEGER NOT NULL,
+    setting_key TEXT NOT NULL,
+    setting_value TEXT NOT NULL,
+    PRIMARY KEY (professor_user_id, setting_key),
+    FOREIGN KEY (professor_user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS app_settings (
@@ -111,8 +145,11 @@ CREATE TABLE IF NOT EXISTS dynamics_sync_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_roster_name ON student_roster(student_name);
+CREATE INDEX IF NOT EXISTS idx_professor_settings ON professor_settings(professor_user_id, setting_key);
+CREATE INDEX IF NOT EXISTS idx_roster_clear_time ON student_roster_clear_log(cleared_at);
 CREATE INDEX IF NOT EXISTS idx_entries_user_scenario ON student_entries(user_id, scenario_id);
 CREATE INDEX IF NOT EXISTS idx_submissions_user ON submissions(user_id, submitted_at);
 CREATE INDEX IF NOT EXISTS idx_schedule_scores_submission ON submission_schedule_scores(submission_id);
+CREATE INDEX IF NOT EXISTS idx_support_user_scenario ON student_support_events(user_id, scenario_id, event_type);
 CREATE INDEX IF NOT EXISTS idx_audit_user_time ON audit_log(user_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_sync_status ON dynamics_sync_log(sync_status, created_at);

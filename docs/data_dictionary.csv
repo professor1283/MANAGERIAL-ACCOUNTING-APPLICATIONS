@@ -11,20 +11,25 @@ scenarios,solution_json,TEXT/JSON,No,,,Instructor solution keyed by budget cell 
 scenarios,active,INTEGER/Boolean,No,,1,Indicates whether the scenario is available,statecode or nb_active
 scenarios,created_at,TEXT/UTC timestamp,No,,,Scenario creation timestamp,createdon
 users,user_id,INTEGER,No,Primary key,Auto increment,Application user identifier,nb_budgetuserid
-users,username,TEXT,No,Unique,,"Internal user identifier; professor may sign in with Professor/professor, while students authenticate through the linked student_roster.student_name",nb_username
+users,username,TEXT,No,Unique,,"Internal user identifier; professor accounts use Professor, Professor 1, or Professor 2 sign-in names, while students authenticate through linked student_roster.student_name",nb_username
 users,display_name,TEXT,No,,,Professor or student display name,nb_name
 users,role,TEXT,No,,,Authorization role: professor or student,nb_role
-users,password_hash,TEXT,Yes,,,Professor PBKDF2-SHA256 salted password hash. Student authentication uses the linked student_roster.password field.,Not recommended for Dataverse; use Microsoft Entra ID
+users,password_hash,TEXT,Yes,,,PBKDF2-SHA256 salted password hash for all professor accounts. Student authentication uses linked student_roster.password.,Not recommended for Dataverse; use Microsoft Entra ID
 users,active,INTEGER/Boolean,No,,1,Account enabled flag,statecode or nb_active
 users,scenario_id,INTEGER,No,Foreign key,,Assigned scenario,nb_BudgetScenario lookup
 users,created_at,TEXT/UTC timestamp,No,,,Account creation timestamp,createdon
 student_roster,student_id,INTEGER,No,Primary key,Auto increment,Student Table row identifier used in the Professor section,nb_studentrosterid
+student_roster,professor_user_id,INTEGER,No,Foreign key,,Professor account that owns this independent Student Table row; professor dashboard queries and controls are scoped to this owner,nb_ProfessorUser lookup
 student_roster,user_id,INTEGER,No,Unique foreign key,,Links the rostered student name and password to the existing application user/session record,nb_BudgetUser lookup
-student_roster,student_name,TEXT,No,Unique,,Authorized student name imported from the course roster and used for student sign-in,nb_studentname
+student_roster,student_name,TEXT,No,Unique,,Authorized student name used for student sign-in; names remain globally unique so the existing name + five-digit password login does not require a professor selector,nb_studentname
 student_roster,password,TEXT,Yes,Exactly 5 numeric digits when set,NULL,Student-created five-digit numerical password stored as plain text; NULL until first successful student access,Not recommended for Dataverse; sensitive course access field
 student_roster,active,INTEGER/Boolean,No,CHECK: 0 or 1,1,Controls whether the rostered student may authenticate,statecode or nb_active
 student_roster,created_at,TEXT/UTC timestamp,No,,,Timestamp when the roster record was created,createdon
 student_roster,password_created_at,TEXT/UTC timestamp,Yes,,NULL,Timestamp when the student first created the five-digit password,nb_passwordcreatedat
+student_roster_clear_log,clear_id,INTEGER,No,Primary key,Auto increment,End-of-semester Student Table clear event identifier,nb_studentrosterclearid
+student_roster_clear_log,professor_user_id,INTEGER,No,Foreign key,,Professor account that performed the clear operation,nb_ProfessorUser lookup
+student_roster_clear_log,students_removed,INTEGER,No,,0,Number of student accounts removed from the professor's own Student Table by the clear operation,nb_studentsremoved
+student_roster_clear_log,cleared_at,TEXT/UTC timestamp,No,,,Timestamp of the end-of-semester clear operation,createdon
 student_entries,entry_id,INTEGER,No,Primary key,Auto increment,Draft-entry identifier,nb_budgetentryid
 student_entries,user_id,INTEGER,No,Foreign key,,Student who owns the draft cell,nb_BudgetUser lookup
 student_entries,scenario_id,INTEGER,No,Foreign key,,Scenario associated with the entry,nb_BudgetScenario lookup
@@ -37,7 +42,9 @@ submissions,submission_id,INTEGER,No,Primary key,Auto increment,Graded submissio
 submissions,user_id,INTEGER,No,Foreign key,,Submitting student,nb_BudgetUser lookup
 submissions,scenario_id,INTEGER,No,Foreign key,,Submitted scenario,nb_BudgetScenario lookup
 submissions,attempt_number,INTEGER,No,Unique with user/scenario,,Sequential attempt number,nb_attemptnumber
-submissions,score,REAL,No,,,Weighted score from 0 through 100,nb_score
+submissions,score,REAL,No,,,Final adjusted score from 0 through 100 after subtracting recorded student-support penalty points,nb_score
+submissions,raw_score,REAL,Yes,,,Weighted assignment score before support-tool penalties,nb_rawscore
+submissions,penalty_points,REAL,No,,0,Total percentage-point deductions applied for Assistance and Check My Work uses recorded before submission,nb_penaltypoints
 submissions,entries_json,TEXT/JSON,No,,,Snapshot of every submitted budget cell,nb_entriesjson
 submissions,grading_json,TEXT/JSON,No,,,Schedule-level and cell-level grading results,nb_gradingjson
 submissions,submitted_at,TEXT/UTC timestamp,No,,,Submission timestamp,nb_submittedatutc
@@ -49,11 +56,21 @@ submission_schedule_scores,earned_points,REAL,No,,,Points earned for this schedu
 submission_schedule_scores,possible_points,REAL,No,,,Schedule weight in the 100-point assignment,nb_possiblepoints
 submission_schedule_scores,correct_cells,INTEGER,No,,,Number of correct cells,nb_correctcells
 submission_schedule_scores,possible_cells,INTEGER,No,,,Number of graded cells,nb_possiblecells
+student_support_events,support_event_id,INTEGER,No,Primary key,Auto increment,Student support-tool event identifier,nb_studentsupporteventid
+student_support_events,user_id,INTEGER,No,Foreign key,,Student who used the support tool,nb_BudgetUser lookup
+student_support_events,scenario_id,INTEGER,No,Foreign key,,Scenario in which the support tool was used,nb_BudgetScenario lookup
+student_support_events,schedule_id,TEXT,No,Unique with user/scenario/event_type,,Budget section for which Assistance or Check My Work was used,nb_scheduleid
+student_support_events,event_type,TEXT,No,CHECK: assistance or check_work,,Type of grade-affecting student support event,nb_eventtype
+student_support_events,penalty_points,REAL,No,,Professor-configured at first use,"Percentage-point deduction caused by this support event, using the owning professor's configured penalty at the time of first use",nb_penaltypoints
+student_support_events,created_at,TEXT/UTC timestamp,No,,,Timestamp when the support event was first recorded,createdon
+professor_settings,professor_user_id,INTEGER,No,Composite primary key + foreign key,,Professor account whose independent policy settings apply only to students in that professor's Student Table,nb_ProfessorUser lookup
+professor_settings,setting_key,TEXT,No,Composite primary key,,"Professor-scoped policy name: max_attempts, passing_score, allow_student_feedback, check_work_enabled, check_work_penalty, or assistance_penalty",nb_settingkey
+professor_settings,setting_value,TEXT,No,,,Value for the professor-scoped policy. Penalty values are percentage points; check_work_enabled controls availability of Check My Work.,nb_settingvalue
 app_settings,setting_key,TEXT,No,Primary key,,Application setting name,Environment variable or nb_budgetsetting
-app_settings,setting_value,TEXT,No,,,"Setting value such as attempts, passing score, or feedback control",nb_settingvalue
+app_settings,setting_value,TEXT,No,,,Global application-level setting value; currently includes the one-time student_roster_seeded migration/initialization flag. Professor grading policies are stored separately in professor_settings.,nb_settingvalue
 audit_log,audit_id,INTEGER,No,Primary key,Auto increment,Audit event identifier,nb_budgetauditlogid
 audit_log,user_id,INTEGER,Yes,Foreign key,,User associated with the event,nb_BudgetUser lookup
-audit_log,action,TEXT,No,,,"LOGIN, STUDENT_PASSWORD_CREATED, SAVE_DRAFT, SUBMIT, PROFESSOR_RESET, or PROFESSOR_ADD_STUDENT",nb_action
+audit_log,action,TEXT,No,,,"LOGIN, STUDENT_PASSWORD_CREATED, SAVE_DRAFT, DETAILED_EXPLANATION, ASSISTANCE_USED, CHECK_WORK_USED, SUBMIT, GRADE_PDF_DOWNLOAD, PROFESSOR_RESET, PROFESSOR_RESET_PASSWORD, PROFESSOR_ADD_STUDENT, PROFESSOR_CLEAR_STUDENT_TABLE, or PROFESSOR_SETTINGS_UPDATE",nb_action
 audit_log,details_json,TEXT/JSON,Yes,,,Context for the event,nb_detailsjson
 audit_log,created_at,TEXT/UTC timestamp,No,,,Audit event timestamp,createdon
 dynamics_sync_log,sync_id,INTEGER,No,Primary key,Auto increment,Dataverse synchronization event identifier,nb_budgetsynclogid

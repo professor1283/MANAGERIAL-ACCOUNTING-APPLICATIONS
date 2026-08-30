@@ -106,18 +106,23 @@
       <div class="dashboard-grid">
         <div class="panel span-2">
           <div class="section-heading">
-            <div><p class="eyebrow">Instructor controls</p><h2>Student Table</h2><p class="small muted">Rostered students create their own five-digit numerical password on first access. The password is stored in this table as plain text, as configured for this course.</p></div>
+            <div><p class="eyebrow">Instructor controls</p><h2 id="professorTableOwner">Student Table</h2><p class="small muted">Each professor account has an independent Student Table. Only students assigned to the currently signed-in professor appear here. Rostered students create their own five-digit numerical password on first access. The password is stored in this table as plain text, as configured for this course. An InPrivate/Incognito window does not erase a password stored in the server database. Use <strong>Remove Password</strong> only when a student must return to first-time password creation; this does not delete the student's saved work or submissions.</p></div>
             <a class="button secondary" href="/api/professor/export.csv">Export Scores CSV</a>
           </div>
           <div id="studentTable" class="responsive-table"></div>
         </div>
         <div class="panel">
           <h2>Add Roster Student</h2>
-          <p class="small muted">The uploaded class roster is preloaded. Use this only if a student must be added later. The student creates the five-digit password on first access.</p>
+          <p class="small muted">The original uploaded class roster remains assigned to the original Professor account. Professor 1 and Professor 2 maintain their own independent rosters. Use this form to add a student only to the currently signed-in professor's Student Table. The student creates the five-digit password on first access.</p>
           <form id="addStudentForm" class="stack compact">
             <label>Student name<input id="newDisplayName" required></label>
             <button class="primary" type="submit">Add Student</button>
           </form>
+        </div>
+        <div class="panel danger-panel">
+          <h2>End-of-Semester Student Table Clear</h2>
+          <p class="small muted">Use this only after the semester is complete and after any needed grade exports or backups are finished. This permanently removes student names, five-digit passwords, saved draft work, submissions, scores, and attempt history from <strong>the currently signed-in professor's Student Table only</strong>. The other two professors' Student Tables are not changed. Professor accounts, assignment information, Canvas access, Render hosting, and GitHub deployment remain unchanged.</p>
+          <button id="clearStudentTableBtn" class="danger-button" type="button">Clear Student Table</button>
         </div>
         <div class="panel">
           <h2>Assignment Settings</h2>
@@ -125,6 +130,10 @@
             <label>Maximum attempts<input id="maxAttempts" type="number" min="1" max="10"></label>
             <label>Passing score<input id="passingScore" type="number" min="0" max="100"></label>
             <label class="check-row"><input id="allowFeedback" type="checkbox"> Show cell-level correctness to students</label>
+            <label class="check-row"><input id="checkWorkEnabled" type="checkbox"> Allow Check My Work</label>
+            <label>Check My Work penalty (percentage points)<input id="checkWorkPenalty" type="number" min="0" max="100" step="0.25"></label>
+            <label>Answer Hint / Assistance penalty (percentage points)<input id="assistancePenalty" type="number" min="0" max="100" step="0.25"></label>
+            <p class="small muted">These settings apply only to students in this professor's Student Table. They do not change either of the other professors' settings or students.</p>
             <button class="secondary" type="submit">Save Settings</button>
           </form>
         </div>
@@ -170,6 +179,15 @@
       </div>
     </section>
   </div>
+
+  <dialog id="supportDialog" class="support-dialog">
+    <div>
+      <p id="supportEyebrow" class="eyebrow">Learning support</p>
+      <h2 id="supportTitle">Section Support</h2>
+      <div id="supportContent" class="support-content"></div>
+      <div class="dialog-actions"><button id="closeSupportBtn" class="primary" type="button">Close</button></div>
+    </div>
+  </dialog>
 
   <dialog id="confirmDialog">
     <form method="dialog">

@@ -6,6 +6,9 @@ const state = {
   maxAttempts: 3,
   grading: null,
   solution: null,
+  support: { penalty_points: 0, assistance_used: [], check_work_used: [] },
+  policy: { max_attempts: 3, check_work_enabled: true, check_work_penalty: 1, assistance_penalty: 1, passing_score: 80, allow_student_feedback: true },
+  progress: { raw_score: 0, penalty_points: 0, adjusted_score: 0, completed_cells: 0, possible_cells: 0 },
 };
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -145,6 +148,11 @@ function recalculateSalesBudget() {
   setComputedValue('sales.revenue.Total', complete ? totalRevenue : '', 'currency');
 }
 
+function penaltyLabel(value) {
+  const n = Number(value || 0);
+  return `${n.toFixed(Number.isInteger(n) ? 0 : 2)} percentage point${Math.abs(n - 1) < 0.000001 ? '' : 's'}`;
+}
+
 function renderSchedules(container, linksContainer, solutionMode = false) {
   const schedules = state.scenario.schedules;
   linksContainer.innerHTML = schedules.map(s => `<a href="#${solutionMode ? 'solution-' : ''}${s.id}">${escapeHtml(s.title)}</a>`).join('');
@@ -167,9 +175,20 @@ function renderSchedules(container, linksContainer, solutionMode = false) {
       return `<tr><td>${escapeHtml(row.label)}${row.note ? `<span class="row-note">${escapeHtml(row.note)}</span>` : ''}</td>${cells}</tr>`;
     }).join('');
     return `
-      <section id="${solutionMode ? 'solution-' : ''}${schedule.id}" class="panel schedule-card">
-        <header><div><h2>${escapeHtml(schedule.title)}</h2><p class="instructions">${escapeHtml(schedule.instructions)}</p></div><span class="weight-pill">${schedule.weight} points</span></header>
+      <section id="${solutionMode ? 'solution-' : ''}${schedule.id}" class="panel schedule-card" data-schedule-id="${escapeHtml(schedule.id)}">
+        <header>
+          <div><h2>${escapeHtml(schedule.title)}</h2><p class="instructions">${escapeHtml(schedule.instructions)}</p></div>
+          <div class="schedule-header-tools">
+            <span class="weight-pill">${schedule.weight} points</span>
+            ${solutionMode ? '' : `<div class="schedule-actions">
+              <button type="button" class="support-btn explanation-btn" data-schedule-id="${escapeHtml(schedule.id)}">Detailed Explanation</button>
+              <button type="button" class="support-btn assistance-btn" data-schedule-id="${escapeHtml(schedule.id)}">${state.support.assistance_used?.includes(schedule.id) ? 'View Answer Hint / Assistance (penalty recorded)' : `Answer Hint / Assistance (-${penaltyLabel(state.policy.assistance_penalty)})`}</button>
+              <button type="button" class="support-btn check-work-btn" data-schedule-id="${escapeHtml(schedule.id)}" ${(!state.policy.check_work_enabled || state.support.check_work_used?.includes(schedule.id)) ? 'disabled' : ''}>${!state.policy.check_work_enabled ? 'Check My Work Disabled' : (state.support.check_work_used?.includes(schedule.id) ? 'Check My Work Used' : `Check My Work (-${penaltyLabel(state.policy.check_work_penalty)})`)}</button>
+            </div>`}
+          </div>
+        </header>
         <div class="responsive-table"><table class="budget-table"><thead><tr><th>Budget line</th>${head}</tr></thead><tbody>${body}</tbody></table></div>
+        ${solutionMode ? '' : `<div id="check-summary-${escapeHtml(schedule.id)}" class="check-summary hidden"></div>`}
       </section>
     `;
   }).join('');
@@ -181,6 +200,7 @@ function renderSchedules(container, linksContainer, solutionMode = false) {
         state.entries[input.dataset.key] = parseNumeric(input.value);
         input.classList.remove('correct', 'incorrect');
         if (input.dataset.key.startsWith('sales.units.')) recalculateSalesBudget();
+        scheduleProgressUpdate();
       });
       input.addEventListener('blur', () => {
         if (input.dataset.computed === 'true') return;
@@ -190,6 +210,7 @@ function renderSchedules(container, linksContainer, solutionMode = false) {
           state.entries[input.dataset.key] = parsed;
         }
         if (input.dataset.key.startsWith('sales.units.')) recalculateSalesBudget();
+        scheduleProgressUpdate();
       });
       input.addEventListener('focus', () => {
         if (input.dataset.computed === 'true') return;
@@ -199,14 +220,101 @@ function renderSchedules(container, linksContainer, solutionMode = false) {
     });
     recalculateSalesBudget();
     if (state.grading?.details) applyFeedback(state.grading.details);
+    bindScheduleSupportButtons(container);
+    scheduleProgressUpdate();
   }
 }
 
-function collectEntries() {
+let progressTimer = null;
+function scheduleProgressUpdate() {
+  clearTimeout(progressTimer);
+  progressTimer = setTimeout(() => updateProgressGrade().catch(() => {}), 450);
+}
+
+function renderProgress(progress, support = state.support) {
+  if (support) state.support = support;
+  if (progress) state.progress = progress;
+  const p = state.progress || {};
+  const penalties = Number(p.penalty_points ?? state.support?.penalty_points ?? 0);
+  const grade = Number(p.adjusted_score || 0);
+  const raw = Number(p.raw_score || 0);
+  if ($('#cumulativeGrade')) $('#cumulativeGrade').textContent = `${grade.toFixed(2)}%`;
+  if ($('#gradeBreakdown')) $('#gradeBreakdown').textContent = `Raw ${raw.toFixed(2)}% - penalties ${penalties.toFixed(2)} point(s)`;
+  if ($('#completionStatus')) $('#completionStatus').textContent = `${Number(p.completed_cells || 0)} of ${Number(p.possible_cells || 0)} graded cells completed`;
+}
+
+async function updateProgressGrade() {
+  if (!state.user || state.user.role !== 'student' || !state.scenario) return;
+  const entries = collectEntries(false);
+  const payload = await api('/api/student/progress', { method: 'POST', body: JSON.stringify({ entries }) });
+  if (payload.policy) state.policy = { ...state.policy, ...payload.policy };
+  renderProgress(payload.progress, payload.support);
+}
+
+function showSupportDialog(title, content, eyebrow = 'Learning support') {
+  $('#supportEyebrow').textContent = eyebrow;
+  $('#supportTitle').textContent = title;
+  $('#supportContent').innerHTML = `<p>${escapeHtml(content)}</p>`;
+  $('#supportDialog').showModal();
+}
+
+function applySectionFeedback(scheduleId, details) {
+  Object.entries(details || {}).forEach(([key, detail]) => {
+    const input = document.querySelector(`[data-key="${CSS.escape(key)}"]`);
+    if (!input) return;
+    input.classList.toggle('correct', Boolean(detail.correct));
+    input.classList.toggle('incorrect', !detail.correct);
+    input.title = detail.correct ? 'Correct' : `Review this amount. Your entry: ${detail.actual ?? 'blank'}`;
+  });
+}
+
+function bindScheduleSupportButtons(container) {
+  $$('.explanation-btn', container).forEach(btn => btn.addEventListener('click', async () => {
+    try {
+      const payload = await api('/api/student/explanation', { method: 'POST', body: JSON.stringify({ schedule_id: btn.dataset.scheduleId }) });
+      showSupportDialog(payload.title, payload.content, 'Detailed explanation - no grade penalty');
+    } catch (error) { toast(error.message); }
+  }));
+  $$('.assistance-btn', container).forEach(btn => btn.addEventListener('click', async () => {
+    const alreadyUsed = state.support.assistance_used?.includes(btn.dataset.scheduleId);
+    if (!alreadyUsed && !confirm(`Using Answer Hint / Assistance for this section will deduct ${penaltyLabel(state.policy.assistance_penalty)} from your final assignment grade. Continue?`)) return;
+    try {
+      const payload = await api('/api/student/assistance', { method: 'POST', body: JSON.stringify({ schedule_id: btn.dataset.scheduleId }) });
+      state.support = payload.support;
+      if (payload.policy) state.policy = { ...state.policy, ...payload.policy };
+      if (payload.penalty_applied) toast(`Answer Hint / Assistance opened: ${penaltyLabel(payload.penalty_applied)} deducted`);
+      showSupportDialog(payload.title, payload.content, payload.already_used ? 'Answer Hint / Assistance - penalty already recorded' : `Answer Hint / Assistance - ${penaltyLabel(payload.penalty_applied)} penalty recorded`);
+      await updateProgressGrade();
+    } catch (error) { toast(error.message); }
+  }));
+  $$('.check-work-btn', container).forEach(btn => btn.addEventListener('click', async () => {
+    if (btn.disabled) return;
+    if (!confirm(`Check My Work can be used only once for this section and will deduct ${penaltyLabel(state.policy.check_work_penalty)} from your final assignment grade. Continue?`)) return;
+    try {
+      const entries = collectEntries(false);
+      const payload = await api('/api/student/check-work', { method: 'POST', body: JSON.stringify({ schedule_id: btn.dataset.scheduleId, entries }) });
+      state.support = payload.support;
+      if (payload.policy) state.policy = { ...state.policy, ...payload.policy };
+      applySectionFeedback(btn.dataset.scheduleId, payload.details);
+      const summary = $(`#check-summary-${CSS.escape(btn.dataset.scheduleId)}`);
+      if (summary) {
+        summary.classList.remove('hidden');
+        summary.textContent = `Check My Work result: ${payload.result.correct} of ${payload.result.possible_cells} graded cells are currently correct. ${penaltyLabel(payload.penalty_applied)} has been deducted. Correct answers are not displayed.`;
+      }
+      btn.disabled = true;
+      btn.textContent = 'Check My Work Used';
+      renderProgress(payload.progress, payload.support);
+      toast(`Check My Work completed: ${penaltyLabel(payload.penalty_applied)} deducted`);
+    } catch (error) { toast(error.message); }
+  }));
+}
+
+function collectEntries(triggerProgress = true) {
   recalculateSalesBudget();
   $$('.budget-input').forEach(input => {
     state.entries[input.dataset.key] = parseNumeric(input.value);
   });
+  if (triggerProgress) scheduleProgressUpdate();
   return state.entries;
 }
 
@@ -221,8 +329,12 @@ async function loadStudent() {
   state.entries = work.entries || {};
   state.attemptsUsed = work.attempts_used;
   state.maxAttempts = work.max_attempts;
+  state.support = work.support || state.support;
+  state.policy = { ...state.policy, ...(work.policy || {}) };
+  state.progress = work.progress || state.progress;
   renderSchedules($('#scheduleContainer'), $('#scheduleLinks'));
   updateAttemptStatus();
+  renderProgress(state.progress, state.support);
   await loadResults(false);
   $('#studentNav').classList.remove('hidden');
   $('#professorNav').classList.add('hidden');
@@ -238,6 +350,8 @@ function renderResults(submission) {
   const grading = submission.grading;
   state.grading = grading;
   const score = Number(submission.score);
+  const rawScore = Number(submission.raw_score ?? grading.raw_score ?? score);
+  const penaltyPoints = Number(submission.penalty_points ?? grading.penalty_points ?? 0);
   const cards = Object.values(grading.schedule_results || {}).map(result => `
     <div class="feedback-card"><strong>${escapeHtml(result.title)}</strong><span>${result.correct} of ${result.possible_cells} cells correct</span><p>${Number(result.score).toFixed(2)} / ${result.weight} points</p></div>
   `).join('');
@@ -245,8 +359,9 @@ function renderResults(submission) {
     <p class="eyebrow">Latest graded attempt</p>
     <div class="results-score">
       <div class="score-circle" style="--score-angle:${Math.max(0, Math.min(100, score)) * 3.6}deg"><strong>${score.toFixed(2)}%</strong></div>
-      <div><h2>Attempt ${submission.attempt_number}</h2><p class="muted">Submitted ${new Date(submission.submitted_at).toLocaleString()}</p></div>
+      <div><h2>Attempt ${submission.attempt_number}</h2><p class="muted">Submitted ${new Date(submission.submitted_at).toLocaleString()}</p><p><strong>Raw score:</strong> ${rawScore.toFixed(2)}% &nbsp; <strong>Grade penalties:</strong> -${penaltyPoints.toFixed(2)} point(s)</p></div>
     </div>
+    <div class="result-actions"><a class="button primary" href="/api/student/grade.pdf">Download Grade PDF for Canvas</a></div>
     <div class="feedback-grid">${cards}</div>
     <p class="small muted">Green cells are within the grading tolerance. Red cells require revision. Currency amounts are graded within $1; units and hours within 0.5.</p>
   `;
@@ -281,6 +396,8 @@ async function submitAssignment() {
   const payload = await api('/api/student/submit', { method: 'POST', body: JSON.stringify({ entries }) });
   state.attemptsUsed = payload.attempt_number;
   state.grading = payload.grading;
+  state.progress = { ...(state.progress || {}), raw_score: payload.grading.raw_score ?? payload.grading.score, penalty_points: payload.grading.penalty_points ?? 0, adjusted_score: payload.grading.score };
+  renderProgress(state.progress, payload.grading.penalty_summary || state.support);
   updateAttemptStatus();
   renderSchedules($('#scheduleContainer'), $('#scheduleLinks'));
   await loadResults(true);
@@ -301,14 +418,23 @@ async function loadProfessorDashboard() {
       <td>${escapeHtml(s.display_name)}</td><td class="numeric">${s.password ? escapeHtml(s.password) : 'Not set'}</td>
       <td class="numeric">${s.attempts}</td><td class="numeric">${s.best_score === null ? '—' : Number(s.best_score).toFixed(2)}</td>
       <td>${s.last_submitted ? new Date(s.last_submitted).toLocaleString() : '—'}</td>
-      <td><button class="secondary reset-student" data-user-id="${s.user_id}" data-name="${escapeHtml(s.display_name)}">Reset</button></td>
+      <td class="action-cell">
+        <button class="secondary reset-student" data-user-id="${s.user_id}" data-name="${escapeHtml(s.display_name)}">Reset Attempts</button>
+        <button class="secondary reset-password" data-user-id="${s.user_id}" data-name="${escapeHtml(s.display_name)}" ${s.password ? '' : 'disabled'}>Remove Password</button>
+      </td>
     </tr>
   `);
-  $('#studentTable').innerHTML = tableOrEmpty(['Student Name', 'Password', 'Attempts', 'Best Score', 'Last Submission', 'Action'], studentRows, 'No students have been created.');
+  $('#studentTable').innerHTML = tableOrEmpty(['Student Name', 'Password', 'Attempts', 'Best Score', 'Last Submission', 'Actions'], studentRows, 'No students have been created.');
   $$('.reset-student').forEach(btn => btn.addEventListener('click', async () => {
-    if (!confirm(`Delete all saved work and submissions for ${btn.dataset.name}?`)) return;
+    if (!confirm(`Delete all saved work and submissions for ${btn.dataset.name}? The student's five-digit password will be kept.`)) return;
     await api('/api/professor/reset', { method: 'POST', body: JSON.stringify({ user_id: Number(btn.dataset.userId) }) });
-    toast('Student attempt history reset');
+    toast('Student attempt history reset; password retained');
+    await loadProfessorDashboard();
+  }));
+  $$('.reset-password').forEach(btn => btn.addEventListener('click', async () => {
+    if (!confirm(`Remove the stored five-digit password for ${btn.dataset.name}? Their saved work and submissions will be kept. On the next login, this student will create a new five-digit password.`)) return;
+    await api('/api/professor/reset-password', { method: 'POST', body: JSON.stringify({ user_id: Number(btn.dataset.userId) }) });
+    toast('Student password removed; next login will create a new five-digit password');
     await loadProfessorDashboard();
   }));
 
@@ -317,9 +443,13 @@ async function loadProfessorDashboard() {
   `);
   $('#submissionTable').innerHTML = tableOrEmpty(['Student', 'Attempt', 'Score', 'Submitted'], submissionRows, 'No submissions have been recorded.');
 
+  if ($('#professorTableOwner')) $('#professorTableOwner').textContent = `${studentsPayload.professor || state.user.display_name} Student Table`;
   $('#maxAttempts').value = studentsPayload.settings.max_attempts || 3;
   $('#passingScore').value = studentsPayload.settings.passing_score || 80;
   $('#allowFeedback').checked = studentsPayload.settings.allow_student_feedback === '1';
+  $('#checkWorkEnabled').checked = studentsPayload.settings.check_work_enabled !== '0';
+  $('#checkWorkPenalty').value = studentsPayload.settings.check_work_penalty ?? 1;
+  $('#assistancePenalty').value = studentsPayload.settings.assistance_penalty ?? 1;
 }
 
 async function loadProfessor() {
@@ -370,6 +500,8 @@ async function initialize() {
     $('#loginError').textContent = error.message;
   }
 }
+
+$('#closeSupportBtn').addEventListener('click', () => $('#supportDialog').close());
 
 $('#loginForm').addEventListener('submit', async event => {
   event.preventDefault();
@@ -451,6 +583,24 @@ $('#addStudentForm').addEventListener('submit', async event => {
   } catch (error) { toast(error.message); }
 });
 
+$('#clearStudentTableBtn').addEventListener('click', async () => {
+  const first = confirm(`This is an end-of-semester operation for ${state.user.display_name}. It will permanently remove only this professor's student names, passwords, saved drafts, submissions, scores, and attempts. The other professors' Student Tables will not be changed. Continue?`);
+  if (!first) return;
+  const confirmation = prompt('Type CLEAR STUDENT TABLE exactly to permanently clear all student records.');
+  if (confirmation !== 'CLEAR STUDENT TABLE') {
+    toast('Student Table clear cancelled');
+    return;
+  }
+  try {
+    const payload = await api('/api/professor/clear-student-table', {
+      method: 'POST',
+      body: JSON.stringify({ confirmation })
+    });
+    toast(`Student Table cleared: ${payload.students_removed} student record(s) removed`);
+    await loadProfessorDashboard();
+  } catch (error) { toast(error.message); }
+});
+
 $('#settingsForm').addEventListener('submit', async event => {
   event.preventDefault();
   try {
@@ -460,6 +610,9 @@ $('#settingsForm').addEventListener('submit', async event => {
         max_attempts: Number($('#maxAttempts').value),
         passing_score: Number($('#passingScore').value),
         allow_student_feedback: $('#allowFeedback').checked ? 1 : 0,
+        check_work_enabled: $('#checkWorkEnabled').checked ? 1 : 0,
+        check_work_penalty: Number($('#checkWorkPenalty').value),
+        assistance_penalty: Number($('#assistancePenalty').value),
       })
     });
     toast('Assignment settings saved');

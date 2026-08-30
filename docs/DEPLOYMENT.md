@@ -33,8 +33,11 @@ For Azure App Service, use `python server.py` as the startup command and place t
 
 ## Security and operations
 
-- Set a private `BUDGET_SIM_PROFESSOR_PASSWORD` before production use. Student passwords are created by rostered students on first access and stored in the Student Table as configured.
+- The existing `Professor` account may use a private `BUDGET_SIM_PROFESSOR_PASSWORD` before production use. Additional fixed professor access is `Professor 1` / `12345` and `Professor 2` / `12345`. Student passwords are created by rostered students on first access and stored in the Student Table as configured.
 - Use HTTPS for internet deployment.
 - Back up `data/budget_simulation.db` regularly.
 - Configure a reverse proxy or Azure front end for TLS, rate limiting, and centralized authentication.
 - The in-memory login sessions are cleared when the server restarts.
+
+## End-of-semester clearing
+Use **Professor Dashboard → Clear Student Table** only after exporting grades and backing up the persistent database if records must be retained. The operation deletes all student users and cascades to their roster records, drafts, submissions, schedule scores, and attempt history. Professor users, scenario data, Render environment configuration, persistent disk mount, Canvas URL, and GitHub workflow are not changed. The initial roster seed flag is retained so Render restarts do not repopulate the cleared roster.

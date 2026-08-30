@@ -1,4 +1,4 @@
-const CACHE = 'northbridge-budget-v3';
+const CACHE = 'northbridge-budget-v4';
 const SHELL = ['/', '/index.html', '/styles.css', '/app.js', '/manifest.json'];
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL))));
 self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));

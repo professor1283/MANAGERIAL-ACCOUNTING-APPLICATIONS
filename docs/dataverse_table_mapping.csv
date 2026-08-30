@@ -1,6 +1,8 @@
 ﻿Local Table,Suggested Dataverse Display Name,Suggested Entity Set,Purpose
 scenarios,Budget Scenario,nb_budgetscenarios,"Stores professor-access assignment information, schedule metadata, access scope, and instructor solution"
 users,Budget User,nb_budgetusers,Stores local application users or an external Entra subject reference
+student_roster,Professor Student Roster,nb_studentrosters,"Stores professor-owned student roster membership and five-digit student access linkage; professor_user_id isolates each professor Student Table"
+professor_settings,Professor Assignment Setting,nb_professorsettings,"Stores independent assignment-policy values for each professor, including attempts and support-tool controls/penalties"
 student_entries,Budget Entry,nb_budgetentries,"Stores student draft cell values, identifies student-input versus system-calculated fields, and retains calculation-rule metadata"
 submissions,Budget Submission,nb_budgetsubmissions,Stores graded attempts and JSON snapshots
 submission_schedule_scores,Budget Schedule Score,nb_budgetschedulescores,Stores schedule-level grading detail
