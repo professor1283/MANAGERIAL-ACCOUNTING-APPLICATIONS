@@ -1,6 +1,6 @@
 # Canvas LMS Semester Use
 
-This folder adds Canvas deployment and student-launch materials without changing the Northbridge Components MBA Master Budget Simulation itself.
+This folder adds Canvas deployment and student-launch materials. Assignment content is unchanged; student access uses the roster-based Student Table.
 
 ## Recommended graded-semester configuration
 
@@ -8,7 +8,7 @@ This folder adds Canvas deployment and student-launch materials without changing
 2. Keep `data/budget_simulation.db` on persistent storage and back it up regularly.
 3. Set a private professor password before the database is first created with `BUDGET_SIM_PROFESSOR_PASSWORD`.
 4. In Canvas, add the hosted HTTPS application as a Module **External URL** and select **Load in a new tab**. This is the most reliable browser configuration because it avoids third-party-cookie restrictions that can affect framed sites.
-5. Create the student accounts in the Professor section and distribute each student's simulation username/password through your normal course process.
+5. Confirm the preloaded Student Table in the Professor section. On first access, each rostered student enters the exact roster name and creates a five-digit numerical password; the same password is used thereafter.
 6. Use the existing Professor dashboard and `Export Scores CSV` feature for semester grading records.
 
 ## Optional embedded Canvas configuration

@@ -18,15 +18,11 @@
       <h1>Companywide Master Budget</h1>
       <p class="lead">Assume the role of budget manager for a medium-size manufacturing company and prepare the operating budgets, financial budgets, and pro-forma statements.</p>
       <form id="loginForm" class="stack">
-        <label>Username<input id="username" autocomplete="username" required></label>
+        <label>Student / Professor Name<input id="username" autocomplete="username" required></label>
         <label>Password<input id="password" type="password" autocomplete="current-password" required></label>
+        <p class="small muted login-help"><strong>Students:</strong> the first time you enter the simulation, use your full name from the class roster and create a five-digit numerical password. On later visits, use the same five digits.</p>
         <button class="primary" type="submit">Enter Simulation</button>
       </form>
-      <details class="demo-credentials">
-        <summary>Demonstration accounts</summary>
-        <p><strong>Professor:</strong> professor / 3150</p>
-        <p><strong>Student:</strong> mba.student / budget2027</p>
-      </details>
       <p id="loginError" class="error" role="alert"></p>
     </section>
   </main>
@@ -110,18 +106,17 @@
       <div class="dashboard-grid">
         <div class="panel span-2">
           <div class="section-heading">
-            <div><p class="eyebrow">Instructor controls</p><h2>Student Progress</h2></div>
+            <div><p class="eyebrow">Instructor controls</p><h2>Student Table</h2><p class="small muted">Rostered students create their own five-digit numerical password on first access. The password is stored in this table as plain text, as configured for this course.</p></div>
             <a class="button secondary" href="/api/professor/export.csv">Export Scores CSV</a>
           </div>
           <div id="studentTable" class="responsive-table"></div>
         </div>
         <div class="panel">
-          <h2>Add Student</h2>
+          <h2>Add Roster Student</h2>
+          <p class="small muted">The uploaded class roster is preloaded. Use this only if a student must be added later. The student creates the five-digit password on first access.</p>
           <form id="addStudentForm" class="stack compact">
             <label>Student name<input id="newDisplayName" required></label>
-            <label>Username<input id="newUsername" required></label>
-            <label>Temporary password<input id="newPassword" type="password" minlength="6" required></label>
-            <button class="primary" type="submit">Create Student</button>
+            <button class="primary" type="submit">Add Student</button>
           </form>
         </div>
         <div class="panel">

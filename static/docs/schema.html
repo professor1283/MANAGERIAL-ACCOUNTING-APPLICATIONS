@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset="utf-8"><title>Database Schema</title><style>body{font-family:Segoe UI,Arial,sans-serif;margin:36px;color:#102a43}h1{color:#0b7285}.note{background:#edf8fa;border-left:5px solid #0b7285;padding:14px}pre{background:#0b1f33;color:#e6edf3;padding:22px;border-radius:10px;overflow:auto;line-height:1.45}</style></head><body><h1>Northbridge Components MBA Budget Simulation — SQL Schema</h1><p class="note">The student_entries table distinguishes student-entered values from system-calculated values and stores the calculation rule used for Section A annual units and sales revenue.</p><pre>PRAGMA foreign_keys = ON;
+<!doctype html><html><head><meta charset="utf-8"><title>Database Schema</title><style>body{font-family:Segoe UI,Arial,sans-serif;margin:36px;color:#102a43}h1{color:#0b7285}.note{background:#edf8fa;border-left:5px solid #0b7285;padding:14px}pre{background:#0b1f33;color:#e6edf3;padding:22px;border-radius:10px;overflow:auto;line-height:1.45}</style></head><body><h1>Northbridge Components MBA Budget Simulation — SQL Schema</h1><p class="note">The <strong>student_roster</strong> table is the authoritative Student Table for roster-based access. Each student creates a five-digit numerical password on first access; the value is retained as plain-text TEXT so leading zeroes are preserved. The existing users table remains linked for sessions, work, submissions, and professor authentication.</p><pre>PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS scenarios (
     scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,11 +20,24 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT NOT NULL UNIQUE,
     display_name TEXT NOT NULL,
     role TEXT NOT NULL CHECK (role IN (&#x27;professor&#x27;,&#x27;student&#x27;)),
-    password_hash TEXT NOT NULL,
+    password_hash TEXT,
     active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0,1)),
     scenario_id INTEGER NOT NULL,
     created_at TEXT NOT NULL,
     FOREIGN KEY (scenario_id) REFERENCES scenarios(scenario_id)
+);
+
+
+CREATE TABLE IF NOT EXISTS student_roster (
+    student_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL UNIQUE,
+    student_name TEXT NOT NULL UNIQUE,
+    password TEXT,
+    active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0,1)),
+    created_at TEXT NOT NULL,
+    password_created_at TEXT,
+    CHECK (password IS NULL OR (length(password)=5 AND password NOT GLOB &#x27;*[^0-9]*&#x27;)),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS student_entries (
@@ -97,6 +110,7 @@ CREATE TABLE IF NOT EXISTS dynamics_sync_log (
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_roster_name ON student_roster(student_name);
 CREATE INDEX IF NOT EXISTS idx_entries_user_scenario ON student_entries(user_id, scenario_id);
 CREATE INDEX IF NOT EXISTS idx_submissions_user ON submissions(user_id, submitted_at);
 CREATE INDEX IF NOT EXISTS idx_schedule_scores_submission ON submission_schedule_scores(submission_id);

@@ -20,11 +20,24 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT NOT NULL UNIQUE,
     display_name TEXT NOT NULL,
     role TEXT NOT NULL CHECK (role IN ('professor','student')),
-    password_hash TEXT NOT NULL,
+    password_hash TEXT,
     active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0,1)),
     scenario_id INTEGER NOT NULL,
     created_at TEXT NOT NULL,
     FOREIGN KEY (scenario_id) REFERENCES scenarios(scenario_id)
+);
+
+
+CREATE TABLE IF NOT EXISTS student_roster (
+    student_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL UNIQUE,
+    student_name TEXT NOT NULL UNIQUE,
+    password TEXT,
+    active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0,1)),
+    created_at TEXT NOT NULL,
+    password_created_at TEXT,
+    CHECK (password IS NULL OR (length(password)=5 AND password NOT GLOB '*[^0-9]*')),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS student_entries (
@@ -97,6 +110,7 @@ CREATE TABLE IF NOT EXISTS dynamics_sync_log (
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_roster_name ON student_roster(student_name);
 CREATE INDEX IF NOT EXISTS idx_entries_user_scenario ON student_entries(user_id, scenario_id);
 CREATE INDEX IF NOT EXISTS idx_submissions_user ON submissions(user_id, submitted_at);
 CREATE INDEX IF NOT EXISTS idx_schedule_scores_submission ON submission_schedule_scores(submission_id);

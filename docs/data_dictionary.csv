@@ -11,13 +11,20 @@ scenarios,solution_json,TEXT/JSON,No,,,Instructor solution keyed by budget cell 
 scenarios,active,INTEGER/Boolean,No,,1,Indicates whether the scenario is available,statecode or nb_active
 scenarios,created_at,TEXT/UTC timestamp,No,,,Scenario creation timestamp,createdon
 users,user_id,INTEGER,No,Primary key,Auto increment,Application user identifier,nb_budgetuserid
-users,username,TEXT,No,Unique,,Login name,nb_username
+users,username,TEXT,No,Unique,,"Internal user identifier; professor may sign in with Professor/professor, while students authenticate through the linked student_roster.student_name",nb_username
 users,display_name,TEXT,No,,,Professor or student display name,nb_name
 users,role,TEXT,No,,,Authorization role: professor or student,nb_role
-users,password_hash,TEXT,No,,,PBKDF2-SHA256 salted password hash; never stores plaintext passwords,Not recommended for Dataverse; use Microsoft Entra ID
+users,password_hash,TEXT,Yes,,,Professor PBKDF2-SHA256 salted password hash. Student authentication uses the linked student_roster.password field.,Not recommended for Dataverse; use Microsoft Entra ID
 users,active,INTEGER/Boolean,No,,1,Account enabled flag,statecode or nb_active
 users,scenario_id,INTEGER,No,Foreign key,,Assigned scenario,nb_BudgetScenario lookup
 users,created_at,TEXT/UTC timestamp,No,,,Account creation timestamp,createdon
+student_roster,student_id,INTEGER,No,Primary key,Auto increment,Student Table row identifier used in the Professor section,nb_studentrosterid
+student_roster,user_id,INTEGER,No,Unique foreign key,,Links the rostered student name and password to the existing application user/session record,nb_BudgetUser lookup
+student_roster,student_name,TEXT,No,Unique,,Authorized student name imported from the course roster and used for student sign-in,nb_studentname
+student_roster,password,TEXT,Yes,Exactly 5 numeric digits when set,NULL,Student-created five-digit numerical password stored as plain text; NULL until first successful student access,Not recommended for Dataverse; sensitive course access field
+student_roster,active,INTEGER/Boolean,No,CHECK: 0 or 1,1,Controls whether the rostered student may authenticate,statecode or nb_active
+student_roster,created_at,TEXT/UTC timestamp,No,,,Timestamp when the roster record was created,createdon
+student_roster,password_created_at,TEXT/UTC timestamp,Yes,,NULL,Timestamp when the student first created the five-digit password,nb_passwordcreatedat
 student_entries,entry_id,INTEGER,No,Primary key,Auto increment,Draft-entry identifier,nb_budgetentryid
 student_entries,user_id,INTEGER,No,Foreign key,,Student who owns the draft cell,nb_BudgetUser lookup
 student_entries,scenario_id,INTEGER,No,Foreign key,,Scenario associated with the entry,nb_BudgetScenario lookup
@@ -46,7 +53,7 @@ app_settings,setting_key,TEXT,No,Primary key,,Application setting name,Environme
 app_settings,setting_value,TEXT,No,,,"Setting value such as attempts, passing score, or feedback control",nb_settingvalue
 audit_log,audit_id,INTEGER,No,Primary key,Auto increment,Audit event identifier,nb_budgetauditlogid
 audit_log,user_id,INTEGER,Yes,Foreign key,,User associated with the event,nb_BudgetUser lookup
-audit_log,action,TEXT,No,,,"LOGIN, SAVE_DRAFT, SUBMIT, or PROFESSOR_RESET",nb_action
+audit_log,action,TEXT,No,,,"LOGIN, STUDENT_PASSWORD_CREATED, SAVE_DRAFT, SUBMIT, PROFESSOR_RESET, or PROFESSOR_ADD_STUDENT",nb_action
 audit_log,details_json,TEXT/JSON,Yes,,,Context for the event,nb_detailsjson
 audit_log,created_at,TEXT/UTC timestamp,No,,,Audit event timestamp,createdon
 dynamics_sync_log,sync_id,INTEGER,No,Primary key,Auto increment,Dataverse synchronization event identifier,nb_budgetsynclogid

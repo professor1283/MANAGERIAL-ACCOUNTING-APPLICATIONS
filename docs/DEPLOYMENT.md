@@ -21,14 +21,19 @@ The server binds to `0.0.0.0` by default and honors:
 
 - `BUDGET_SIM_HOST`
 - `BUDGET_SIM_PORT`
+- platform `PORT` when `BUDGET_SIM_PORT` is not set (including Render)
 - `BUDGET_SIM_DB`
 - `BUDGET_SIM_NO_BROWSER=1`
+
+### Render
+
+Deploy as a Docker Web Service. Mount the persistent disk at `/app/data`, set `BUDGET_SIM_DB=/app/data/budget_simulation.db`, `BUDGET_SIM_NO_BROWSER=1`, and `BUDGET_SIM_SECURE_COOKIES=1`. The application automatically uses Render's `PORT` value; an explicit `BUDGET_SIM_PORT` is optional. Use `/api/health` or `/api/session` as the health-check path.
 
 For Azure App Service, use `python server.py` as the startup command and place the SQLite file on persistent storage. For higher enrollment or production use, place the app behind HTTPS and migrate the local tables to Dataverse, Azure SQL, or another managed relational database.
 
 ## Security and operations
 
-- Change the default professor and demonstration student passwords before production use.
+- Set a private `BUDGET_SIM_PROFESSOR_PASSWORD` before production use. Student passwords are created by rostered students on first access and stored in the Student Table as configured.
 - Use HTTPS for internet deployment.
 - Back up `data/budget_simulation.db` regularly.
 - Configure a reverse proxy or Azure front end for TLS, rate limiting, and centralized authentication.

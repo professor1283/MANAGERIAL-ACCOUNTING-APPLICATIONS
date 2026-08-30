@@ -298,13 +298,13 @@ async function loadProfessorDashboard() {
   ]);
   const studentRows = studentsPayload.students.map(s => `
     <tr>
-      <td>${escapeHtml(s.display_name)}</td><td>${escapeHtml(s.username)}</td>
+      <td>${escapeHtml(s.display_name)}</td><td class="numeric">${s.password ? escapeHtml(s.password) : 'Not set'}</td>
       <td class="numeric">${s.attempts}</td><td class="numeric">${s.best_score === null ? '—' : Number(s.best_score).toFixed(2)}</td>
       <td>${s.last_submitted ? new Date(s.last_submitted).toLocaleString() : '—'}</td>
       <td><button class="secondary reset-student" data-user-id="${s.user_id}" data-name="${escapeHtml(s.display_name)}">Reset</button></td>
     </tr>
   `);
-  $('#studentTable').innerHTML = tableOrEmpty(['Student', 'Username', 'Attempts', 'Best Score', 'Last Submission', 'Action'], studentRows, 'No students have been created.');
+  $('#studentTable').innerHTML = tableOrEmpty(['Student Name', 'Password', 'Attempts', 'Best Score', 'Last Submission', 'Action'], studentRows, 'No students have been created.');
   $$('.reset-student').forEach(btn => btn.addEventListener('click', async () => {
     if (!confirm(`Delete all saved work and submissions for ${btn.dataset.name}?`)) return;
     await api('/api/professor/reset', { method: 'POST', body: JSON.stringify({ user_id: Number(btn.dataset.userId) }) });
@@ -377,9 +377,10 @@ $('#loginForm').addEventListener('submit', async event => {
   try {
     const payload = await api('/api/login', {
       method: 'POST',
-      body: JSON.stringify({ username: $('#username').value, password: $('#password').value })
+      body: JSON.stringify({ name: $('#username').value, password: $('#password').value })
     });
     state.user = payload.user;
+    if (payload.password_created) toast('Your five-digit student password has been created and saved');
     showApp();
     if (state.user.role === 'student') await loadStudent();
     else await loadProfessor();
@@ -442,12 +443,10 @@ $('#addStudentForm').addEventListener('submit', async event => {
       method: 'POST',
       body: JSON.stringify({
         display_name: $('#newDisplayName').value,
-        username: $('#newUsername').value,
-        password: $('#newPassword').value,
       })
     });
     event.target.reset();
-    toast('Student account created');
+    toast('Student added to the roster');
     await loadProfessorDashboard();
   } catch (error) { toast(error.message); }
 });

@@ -2,13 +2,13 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Canvas Instructor Setup — Northbridge MBA Budget Simulation</title>
 <style>body{font-family:Arial,sans-serif;line-height:1.5;max-width:920px;margin:40px auto;padding:0 24px;color:#172b4d}h1,h2{color:#102a43}.box{border:1px solid #bcccdc;border-radius:10px;padding:18px;margin:18px 0;background:#f8fbfd}code{background:#edf2f7;padding:2px 5px;border-radius:4px}li{margin:.45rem 0}</style></head><body>
 <h1>Canvas LMS Instructor Setup</h1>
-<p>This guide adds Canvas access to the existing Northbridge Components MBA Master Budget Simulation without changing its assignment content, grading, screens, budgets, or database schema.</p>
+<p>This guide adds Canvas access to the existing Northbridge Components MBA Master Budget Simulation without changing its assignment content, grading, budget schedules, or scoring. Student access is roster-based and the database schema includes the Student Table.</p>
 <h2>Recommended semester configuration</h2>
 <ol>
 <li>Deploy one class-wide copy of the application to an HTTPS-capable Python host. Keep <code>data/budget_simulation.db</code> on persistent storage.</li>
 <li>Before the first production launch, set <code>BUDGET_SIM_PROFESSOR_PASSWORD</code> to a private password and set <code>BUDGET_SIM_NO_BROWSER=1</code>.</li>
 <li>In Canvas, open <strong>Modules</strong>, add an <strong>External URL</strong> item, enter the hosted HTTPS simulation URL, and select <strong>Load in a new tab</strong>.</li>
-<li>Create student accounts in the application's existing Professor section. The application will preserve each student's drafts and attempts in the semester database.</li>
+<li>Open the Professor section and confirm the preloaded <strong>Student Table</strong>. Students enter the exact roster name and create a five-digit numerical password on first access; the same password is required thereafter. The application preserves each student's drafts and attempts in the semester database.</li>
 <li>Use the existing <strong>Export Scores CSV</strong> control in the Professor dashboard for grade records.</li>
 <li>Use <code>Backup_Semester_Data.bat</code> on Windows or <code>Backup_Semester_Data.sh</code> on macOS/Linux to make regular database backups.</li>
 </ol>
