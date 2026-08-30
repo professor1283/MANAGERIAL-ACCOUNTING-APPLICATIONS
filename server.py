@@ -15,6 +15,7 @@ import sys
 import threading
 import time
 import urllib.parse
+import unicodedata
 import webbrowser
 from datetime import datetime, timezone
 from http import HTTPStatus
@@ -65,6 +66,14 @@ STUDENT_ROSTER_NAMES = (
     "Mateus Vezzoni Franco",
 )
 
+PROFESSOR_LOGIN_MAP = {
+    "professor": "professor",
+    "professor 1": "professor1",
+    "professor 2": "professor2",
+}
+
+SUPPORT_GUIDE = {'sales': {'explanation': 'The sales budget is the starting point for the master budget because expected unit sales drive production, purchases, labor, overhead, cash collections, and several financial-statement amounts. Enter the forecasted units for each quarter. The application calculates annual units and sales revenue from the unit forecast and the stated selling price. A common error is to confuse unit sales with dollar sales or to type the selling price into a unit-sales cell.', 'assistance': 'Work from the quarterly sales forecast in the assignment information. Enter Q1 through Q4 budgeted unit sales only. The annual unit total is the sum of the four quarters. Budgeted sales revenue for a quarter equals budgeted unit sales multiplied by selling price per unit. The application calculates the revenue cells automatically, so verify the unit inputs first.'}, 'collections': {'explanation': 'The cash collections budget converts accrual-basis sales into expected cash receipts. Each quarter generally contains cash collected from current-quarter sales plus collections related to the preceding quarter. Beginning accounts receivable represents prior-period sales that are collected in the first quarter. Ending accounts receivable represents the portion of fourth-quarter sales that will not be collected until the following year.', 'assistance': 'For each quarter, separate collections into two layers: current-quarter sales multiplied by the current-quarter collection percentage, and prior-quarter sales multiplied by the following-quarter percentage. In Q1, use beginning accounts receivable for the prior-period component. Add the two layers for total collections. Year-end accounts receivable is the uncollected portion of Q4 sales.'}, 'production': {'explanation': 'The production budget determines how many units must be manufactured to satisfy sales demand while maintaining the required finished-goods inventory. Production is not automatically equal to sales because beginning and desired ending inventory change the number of units that must be produced.', 'assistance': "Use this sequence for each quarter: budgeted unit sales + desired ending finished-goods units = total unit requirements; then subtract beginning finished-goods units to obtain required production. Desired ending finished goods equals the stated percentage of the next quarter's unit sales. The next quarter's beginning finished goods equals the previous quarter's ending finished goods."}, 'materials': {'explanation': 'The direct-materials budget converts production units into kilograms of material needed, incorporates the raw-material inventory policy, determines purchases, and then converts purchases into cash payments. Purchases and cash payments differ because suppliers are paid over more than one quarter.', 'assistance': 'First multiply required production units by kilograms required per finished unit. Add desired ending raw-material inventory, then subtract beginning raw-material inventory to obtain required purchases in kilograms. Multiply purchase kilograms by cost per kilogram for purchase cost. For cash payments, apply the supplier-payment percentages to current and prior-quarter purchases; include beginning accounts payable in Q1.'}, 'labor': {'explanation': 'The direct-labor budget converts production activity into labor hours and labor cost. It is driven by production, not sales, because employees work on the units manufactured during the period.', 'assistance': 'For each quarter, multiply required production units by direct-labor hours per unit to obtain required hours. Then multiply required direct-labor hours by the hourly wage rate to obtain direct-labor cost. Annual totals are the sum of the quarterly amounts.'}, 'moh': {'explanation': 'The manufacturing-overhead budget separates overhead that varies with activity from fixed manufacturing overhead. Depreciation is included in total overhead for product costing but is removed when determining cash overhead because depreciation does not require a current cash payment.', 'assistance': 'Calculate variable manufacturing overhead as direct-labor hours multiplied by the variable overhead rate. Add quarterly fixed manufacturing overhead to obtain total manufacturing overhead. Subtract the depreciation component of fixed overhead to obtain cash manufacturing overhead.'}, 'inventory': {'explanation': 'This schedule applies absorption costing. A finished unit includes direct materials, direct labor, variable manufacturing overhead, and an allocation of fixed manufacturing overhead. Those unit costs are then used to value ending finished goods and support cost of goods manufactured and cost of goods sold.', 'assistance': 'Build unit product cost one component at a time: material quantity per unit x material price; labor hours per unit x labor rate; labor hours per unit x variable-overhead rate; and annual fixed manufacturing overhead divided by annual production units. Add the four components for unit product cost. Use ending quantities to value inventories, then reconcile beginning finished goods + cost of goods manufactured - ending finished goods to cost of goods sold.'}, 'sga': {'explanation': 'The selling, general, and administrative budget combines a variable component tied to sales dollars with fixed SG&A. As with manufacturing overhead, depreciation belongs in expense but is removed when computing the cash portion of SG&A.', 'assistance': 'For each quarter, multiply budgeted sales revenue by the variable SG&A percentage. Add quarterly fixed SG&A to obtain total SG&A expense. Subtract the SG&A depreciation amount to obtain cash SG&A.'}, 'cash': {'explanation': 'The cash and financing schedule integrates cash receipts and cash disbursements and then determines whether short-term borrowing or repayment is required to maintain the minimum cash balance. Interest is based on beginning-of-quarter debt, so the financing sequence matters.', 'assistance': 'Begin with beginning cash and add cash collections to get total cash available. Deduct all current-quarter cash disbursements, including materials, labor, cash overhead, cash SG&A, capital expenditures, taxes, interest, and dividends. Compare cash before financing with the minimum balance. Borrow or repay only in the specified increments, then compute ending cash and ending line-of-credit balance.'}, 'income': {'explanation': 'The pro-forma income statement summarizes the expected accrual-basis operating results. It uses sales and absorption-costing cost of goods sold, then deducts SG&A, interest, and income tax expense to arrive at budgeted net income.', 'assistance': 'Follow the income-statement sequence: sales - cost of goods sold = gross margin; gross margin - SG&A = operating income; operating income - interest = income before taxes; subtract income tax expense to obtain net income. Quarterly amounts should reconcile to the annual totals.'}, 'balance': {'explanation': 'The pro-forma balance sheet presents the expected year-end financial position. Many amounts come directly from the ending balances produced by earlier budgets. Retained earnings also incorporates budgeted net income and dividends. The accounting equation must balance.', 'assistance': "Use year-end balances from the supporting schedules for cash, receivables, inventories, accounts payable, and line of credit. Gross PPE equals beginning gross PPE plus capital expenditures. Accumulated depreciation includes beginning accumulated depreciation plus current-year depreciation and is entered as a positive contra-asset amount. Finish by verifying Total Assets = Total Liabilities + Stockholders' Equity."}, 'cashflow': {'explanation': 'The indirect-method statement of cash flows begins with net income and adjusts for noncash expenses and changes in working capital to derive operating cash flow. Investing and financing activities are then reported separately, and the resulting net change must reconcile beginning cash to ending cash.', 'assistance': 'Start operating activities with net income, add depreciation, then adjust for changes in receivables, inventories, and payables using the signs specified in the instructions. Capital expenditures belong in investing activities. Borrowings, debt repayments, and dividends belong in financing activities. Add the three sections to obtain net change in cash and reconcile beginning cash to ending cash.'}}
+
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -108,12 +117,19 @@ def student_username_from_name(name: str) -> str:
     return base.strip(".") or "student"
 
 
-def ensure_roster_student(conn: sqlite3.Connection, scenario_id: int, student_name: str) -> int:
+def ensure_roster_student(conn: sqlite3.Connection, scenario_id: int, professor_user_id: int, student_name: str) -> int:
+    """Create or reactivate a student inside one professor-owned roster.
+
+    Student names remain globally unique so the student login screen can remain unchanged:
+    students still enter only their name and five-digit password, with no professor selector.
+    """
     existing_roster = conn.execute(
-        "SELECT student_id, user_id FROM student_roster WHERE lower(trim(student_name))=lower(trim(?))",
+        "SELECT student_id, user_id, professor_user_id FROM student_roster WHERE lower(trim(student_name))=lower(trim(?))",
         (student_name,),
     ).fetchone()
     if existing_roster:
+        if int(existing_roster["professor_user_id"]) != int(professor_user_id):
+            raise sqlite3.IntegrityError("Student name is already assigned to another professor")
         conn.execute(
             "UPDATE student_roster SET student_name=?, active=1 WHERE student_id=?",
             (student_name, existing_roster["student_id"]),
@@ -149,9 +165,9 @@ def ensure_roster_student(conn: sqlite3.Connection, scenario_id: int, student_na
         user_id = int(cur.lastrowid)
 
     conn.execute(
-        """INSERT INTO student_roster(user_id, student_name, password, active, created_at)
-        VALUES (?, ?, NULL, 1, ?)""",
-        (user_id, student_name, now_iso()),
+        """INSERT INTO student_roster(professor_user_id, user_id, student_name, password, active, created_at)
+        VALUES (?, ?, ?, NULL, 1, ?)""",
+        (professor_user_id, user_id, student_name, now_iso()),
     )
     return user_id
 
@@ -174,6 +190,18 @@ def init_db() -> None:
             )
         if "calculation_rule" not in entry_columns:
             conn.execute("ALTER TABLE student_entries ADD COLUMN calculation_rule TEXT")
+
+        submission_columns = {row["name"] for row in conn.execute("PRAGMA table_info(submissions)").fetchall()}
+        if "raw_score" not in submission_columns:
+            conn.execute("ALTER TABLE submissions ADD COLUMN raw_score REAL")
+        if "penalty_points" not in submission_columns:
+            conn.execute("ALTER TABLE submissions ADD COLUMN penalty_points REAL NOT NULL DEFAULT 0")
+        conn.execute("UPDATE submissions SET raw_score=score WHERE raw_score IS NULL")
+
+        # Upgrade prior semester databases to professor-owned student rosters.
+        roster_columns = {row["name"] for row in conn.execute("PRAGMA table_info(student_roster)").fetchall()}
+        if "professor_user_id" not in roster_columns:
+            conn.execute("ALTER TABLE student_roster ADD COLUMN professor_user_id INTEGER")
 
         scenario = conn.execute("SELECT scenario_id FROM scenarios WHERE scenario_code = ?", ("NBI-2027-MBA",)).fetchone()
         if not scenario:
@@ -203,32 +231,85 @@ def init_db() -> None:
             )
 
         professor_password = os.environ.get("BUDGET_SIM_PROFESSOR_PASSWORD", "3150")
-        professor = conn.execute("SELECT user_id FROM users WHERE username='professor'").fetchone()
-        if not professor:
-            conn.execute(
-                """INSERT INTO users
-                (username, display_name, role, password_hash, active, scenario_id, created_at)
-                VALUES ('professor', 'Professor', 'professor', ?, 1, ?, ?)""",
-                (hash_password(professor_password), scenario_id, now_iso()),
-            )
-        else:
-            conn.execute(
-                "UPDATE users SET display_name='Professor', role='professor', active=1, scenario_id=? WHERE user_id=?",
-                (scenario_id, professor["user_id"]),
-            )
+        professor_accounts = (
+            ("professor", "Professor", professor_password),
+            ("professor1", "Professor 1", "12345"),
+            ("professor2", "Professor 2", "12345"),
+        )
+        professor_ids: Dict[str, int] = {}
+        for username, display_name, initial_password in professor_accounts:
+            professor = conn.execute("SELECT user_id FROM users WHERE username=?", (username,)).fetchone()
+            if not professor:
+                cur = conn.execute(
+                    """INSERT INTO users
+                    (username, display_name, role, password_hash, active, scenario_id, created_at)
+                    VALUES (?, ?, 'professor', ?, 1, ?, ?)""",
+                    (username, display_name, hash_password(initial_password), scenario_id, now_iso()),
+                )
+                professor_ids[username] = int(cur.lastrowid)
+            else:
+                conn.execute(
+                    "UPDATE users SET display_name=?, role='professor', active=1, scenario_id=? WHERE user_id=?",
+                    (display_name, scenario_id, professor["user_id"]),
+                )
+                professor_ids[username] = int(professor["user_id"])
+
+        # Existing student records from earlier versions belong to the original Professor.
+        conn.execute(
+            "UPDATE student_roster SET professor_user_id=? WHERE professor_user_id IS NULL",
+            (professor_ids["professor"],),
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_roster_professor ON student_roster(professor_user_id, student_name)"
+        )
 
         # The former demonstration student is no longer a valid student-access path.
         conn.execute("UPDATE users SET active=0 WHERE username='mba.student' AND role='student'")
 
-        for student_name in STUDENT_ROSTER_NAMES:
-            ensure_roster_student(conn, scenario_id, student_name)
-        settings = {
+        default_professor_settings = {
             "max_attempts": "3",
             "passing_score": "80",
             "allow_student_feedback": "1",
+            "check_work_enabled": "1",
+            "check_work_penalty": "1",
+            "assistance_penalty": "1",
         }
-        for key, value in settings.items():
-            conn.execute("INSERT OR IGNORE INTO app_settings(setting_key, setting_value) VALUES (?, ?)", (key, value))
+        # Preserve any settings from the former single-professor version for the
+        # original Professor account during migration.
+        legacy_settings = {
+            row["setting_key"]: row["setting_value"]
+            for row in conn.execute(
+                "SELECT setting_key, setting_value FROM app_settings WHERE setting_key IN ('max_attempts','passing_score','allow_student_feedback')"
+            )
+        }
+        for professor_user_id in professor_ids.values():
+            for key, value in default_professor_settings.items():
+                conn.execute(
+                    """INSERT OR IGNORE INTO professor_settings
+                    (professor_user_id, setting_key, setting_value)
+                    VALUES (?, ?, ?)""",
+                    (professor_user_id, key, value),
+                )
+        for key, value in legacy_settings.items():
+            conn.execute(
+                """INSERT INTO professor_settings(professor_user_id, setting_key, setting_value)
+                VALUES (?, ?, ?)
+                ON CONFLICT(professor_user_id, setting_key) DO UPDATE SET setting_value=excluded.setting_value""",
+                (professor_ids["professor"], key, value),
+            )
+
+        # Seed the supplied roster once into the original Professor's independent table.
+        # Professor 1 and Professor 2 begin with independent empty tables, preserving the
+        # existing student login method (student name + five-digit password, no section selector).
+        roster_seeded = conn.execute(
+            "SELECT setting_value FROM app_settings WHERE setting_key='student_roster_seeded'"
+        ).fetchone()
+        if roster_seeded is None:
+            for student_name in STUDENT_ROSTER_NAMES:
+                ensure_roster_student(conn, scenario_id, professor_ids["professor"], student_name)
+            conn.execute(
+                "INSERT INTO app_settings(setting_key, setting_value) VALUES ('student_roster_seeded', '1')"
+            )
         conn.commit()
 
 
@@ -273,8 +354,40 @@ def make_session(user: sqlite3.Row) -> str:
 
 
 def get_setting(conn: sqlite3.Connection, key: str, default: str) -> str:
+    """Read a legacy/global application setting."""
     row = conn.execute("SELECT setting_value FROM app_settings WHERE setting_key=?", (key,)).fetchone()
     return row["setting_value"] if row else default
+
+
+def get_professor_setting(conn: sqlite3.Connection, professor_user_id: int, key: str, default: str) -> str:
+    row = conn.execute(
+        "SELECT setting_value FROM professor_settings WHERE professor_user_id=? AND setting_key=?",
+        (professor_user_id, key),
+    ).fetchone()
+    return row["setting_value"] if row else default
+
+
+def get_student_professor_id(conn: sqlite3.Connection, user_id: int) -> int:
+    row = conn.execute(
+        "SELECT professor_user_id FROM student_roster WHERE user_id=? AND active=1",
+        (user_id,),
+    ).fetchone()
+    if not row or row["professor_user_id"] is None:
+        raise RuntimeError("Student is not assigned to an active professor roster")
+    return int(row["professor_user_id"])
+
+
+def get_student_policy(conn: sqlite3.Connection, user_id: int) -> Dict[str, Any]:
+    professor_user_id = get_student_professor_id(conn, user_id)
+    return {
+        "professor_user_id": professor_user_id,
+        "max_attempts": int(get_professor_setting(conn, professor_user_id, "max_attempts", "3")),
+        "passing_score": float(get_professor_setting(conn, professor_user_id, "passing_score", "80")),
+        "allow_student_feedback": get_professor_setting(conn, professor_user_id, "allow_student_feedback", "1") == "1",
+        "check_work_enabled": get_professor_setting(conn, professor_user_id, "check_work_enabled", "1") == "1",
+        "check_work_penalty": float(get_professor_setting(conn, professor_user_id, "check_work_penalty", "1")),
+        "assistance_penalty": float(get_professor_setting(conn, professor_user_id, "assistance_penalty", "1")),
+    }
 
 
 def get_key_formats() -> Dict[str, str]:
@@ -371,6 +484,158 @@ def grade_entries(entries: Dict[str, Any]) -> Dict[str, Any]:
         "schedule_results": schedule_results,
         "details": details,
     }
+
+
+def penalty_summary(conn: sqlite3.Connection, user_id: int, scenario_id: int) -> Dict[str, Any]:
+    rows = conn.execute(
+        """SELECT event_type, COUNT(*) AS c, COALESCE(SUM(penalty_points), 0) AS points
+        FROM student_support_events
+        WHERE user_id=? AND scenario_id=?
+        GROUP BY event_type""",
+        (user_id, scenario_id),
+    ).fetchall()
+    by_type = {row["event_type"]: {"count": int(row["c"]), "points": float(row["points"])} for row in rows}
+    assistance = by_type.get("assistance", {"count": 0, "points": 0.0})
+    check_work = by_type.get("check_work", {"count": 0, "points": 0.0})
+    total = assistance["points"] + check_work["points"]
+    used_rows = conn.execute(
+        """SELECT schedule_id, event_type FROM student_support_events
+        WHERE user_id=? AND scenario_id=?""",
+        (user_id, scenario_id),
+    ).fetchall()
+    return {
+        "assistance_count": assistance["count"],
+        "check_work_count": check_work["count"],
+        "penalty_points": round(total, 2),
+        "assistance_used": sorted(row["schedule_id"] for row in used_rows if row["event_type"] == "assistance"),
+        "check_work_used": sorted(row["schedule_id"] for row in used_rows if row["event_type"] == "check_work"),
+    }
+
+
+def progress_grade(entries: Dict[str, Any], penalties: float) -> Dict[str, Any]:
+    normalized = normalize_entries(entries)
+    grading = grade_entries(normalized)
+    raw_score = float(grading["score"])
+    adjusted_score = max(0.0, raw_score - float(penalties))
+    completed = 0
+    for key in SOLUTION:
+        raw = normalized.get(key)
+        try:
+            value = float(raw)
+            if math.isfinite(value):
+                completed += 1
+        except (TypeError, ValueError):
+            pass
+    return {
+        "raw_score": round(raw_score, 2),
+        "penalty_points": round(float(penalties), 2),
+        "adjusted_score": round(adjusted_score, 2),
+        "completed_cells": completed,
+        "possible_cells": len(SOLUTION),
+    }
+
+
+def _ascii_pdf_text(value: Any) -> str:
+    text = str(value).replace("—", "-").replace("–", "-").replace("’", "'").replace("“", '"').replace("”", '"')
+    return unicodedata.normalize("NFKD", text).encode("ascii", "replace").decode("ascii")
+
+
+def _wrap_pdf_line(text: str, width: int = 92) -> list[str]:
+    text = _ascii_pdf_text(text)
+    if not text:
+        return [""]
+    words = text.split()
+    lines: list[str] = []
+    current = ""
+    for word in words:
+        candidate = word if not current else f"{current} {word}"
+        if len(candidate) <= width:
+            current = candidate
+        else:
+            if current:
+                lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    return lines or [""]
+
+
+def build_grade_pdf(student_name: str, submission: Dict[str, Any], grading: Dict[str, Any]) -> bytes:
+    raw_score = float(submission.get("raw_score") if submission.get("raw_score") is not None else grading.get("raw_score", submission.get("score", 0)))
+    penalty_points = float(submission.get("penalty_points") or grading.get("penalty_points", 0) or 0)
+    final_score = float(submission.get("score", max(0, raw_score - penalty_points)))
+    penalty_info = grading.get("penalty_summary", {})
+    lines = [
+        "Northbridge Components, Inc. - MBA Master Budget Simulation",
+        "Student Grade Report",
+        "",
+        f"Student: {student_name}",
+        f"Attempt: {submission.get('attempt_number')}",
+        f"Submitted (UTC): {submission.get('submitted_at')}",
+        "",
+        f"Raw assignment score: {raw_score:.2f}%",
+        f"Assistance uses: {int(penalty_info.get('assistance_count', 0))}",
+        f"Check My Work uses: {int(penalty_info.get('check_work_count', 0))}",
+        f"Total grade penalties: -{penalty_points:.2f} percentage point(s)",
+        f"FINAL ADJUSTED GRADE: {final_score:.2f}%",
+        "",
+        "Section results:",
+    ]
+    for result in grading.get("schedule_results", {}).values():
+        lines.append(
+            f"{result.get('title')}: {float(result.get('score', 0)):.2f} / {float(result.get('weight', 0)):.2f} points; "
+            f"{int(result.get('correct', 0))} of {int(result.get('possible_cells', 0))} cells correct"
+        )
+    lines += [
+        "",
+        "This PDF was generated by the course simulation for student upload to Canvas as grade evidence.",
+        "The final adjusted grade includes the professor-configured penalties recorded for Assistance and Check My Work usage.",
+    ]
+    wrapped: list[str] = []
+    for line in lines:
+        wrapped.extend(_wrap_pdf_line(line))
+    lines_per_page = 48
+    pages = [wrapped[i:i+lines_per_page] for i in range(0, len(wrapped), lines_per_page)] or [[""]]
+
+    objects: list[bytes] = []
+    # 1 Catalog, 2 Pages, 3 Font; page/content objects follow.
+    page_obj_ids = []
+    content_obj_ids = []
+    next_id = 4
+    for _ in pages:
+        page_obj_ids.append(next_id); content_obj_ids.append(next_id + 1); next_id += 2
+    objects.append(b"<< /Type /Catalog /Pages 2 0 R >>")
+    kids = " ".join(f"{pid} 0 R" for pid in page_obj_ids)
+    objects.append(f"<< /Type /Pages /Kids [{kids}] /Count {len(pages)} >>".encode("ascii"))
+    objects.append(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+    for page_id, content_id, page_lines in zip(page_obj_ids, content_obj_ids, pages):
+        objects.append(
+            f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents {content_id} 0 R >>".encode("ascii")
+        )
+        commands = ["BT", "/F1 10 Tf", "46 746 Td", "14 TL"]
+        for i, line in enumerate(page_lines):
+            safe = line.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+            if i:
+                commands.append("T*")
+            commands.append(f"({safe}) Tj")
+        commands.append("ET")
+        stream = "\n".join(commands).encode("ascii", "replace")
+        objects.append(b"<< /Length " + str(len(stream)).encode("ascii") + b" >>\nstream\n" + stream + b"\nendstream")
+
+    out = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    offsets = [0]
+    for obj_id, obj in enumerate(objects, start=1):
+        offsets.append(len(out))
+        out.extend(f"{obj_id} 0 obj\n".encode("ascii"))
+        out.extend(obj)
+        out.extend(b"\nendobj\n")
+    xref = len(out)
+    out.extend(f"xref\n0 {len(objects)+1}\n".encode("ascii"))
+    out.extend(b"0000000000 65535 f \n")
+    for offset in offsets[1:]:
+        out.extend(f"{offset:010d} 00000 n \n".encode("ascii"))
+    out.extend(f"trailer\n<< /Size {len(objects)+1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n".encode("ascii"))
+    return bytes(out)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -499,13 +764,20 @@ class Handler(BaseHTTPRequestHandler):
             with db_connect() as conn:
                 rows = conn.execute("SELECT cell_key, entered_value FROM student_entries WHERE user_id=?", (session["user_id"],)).fetchall()
                 attempts = conn.execute("SELECT COUNT(*) AS c FROM submissions WHERE user_id=?", (session["user_id"],)).fetchone()["c"]
-                max_attempts = int(get_setting(conn, "max_attempts", "3"))
+                policy = get_student_policy(conn, session["user_id"])
+                max_attempts = policy["max_attempts"]
                 latest = conn.execute("SELECT submission_id, score, submitted_at FROM submissions WHERE user_id=? ORDER BY submission_id DESC LIMIT 1", (session["user_id"],)).fetchone()
+            saved_entries = {r["cell_key"]: r["entered_value"] for r in rows}
+            with db_connect() as conn:
+                support = penalty_summary(conn, session["user_id"], session["scenario_id"])
             self._send_json({
-                "entries": {r["cell_key"]: r["entered_value"] for r in rows},
+                "entries": saved_entries,
                 "attempts_used": attempts,
                 "max_attempts": max_attempts,
                 "latest": dict(latest) if latest else None,
+                "support": support,
+                "progress": progress_grade(saved_entries, support["penalty_points"]),
+                "policy": policy,
             })
             return
         if path == "/api/student/results":
@@ -514,7 +786,8 @@ class Handler(BaseHTTPRequestHandler):
                 return
             with db_connect() as conn:
                 submission = conn.execute("SELECT * FROM submissions WHERE user_id=? ORDER BY submission_id DESC LIMIT 1", (session["user_id"],)).fetchone()
-                allow_feedback = get_setting(conn, "allow_student_feedback", "1") == "1"
+                policy = get_student_policy(conn, session["user_id"])
+                allow_feedback = policy["allow_student_feedback"]
                 if not submission:
                     self._send_json({"submission": None})
                     return
@@ -522,6 +795,40 @@ class Handler(BaseHTTPRequestHandler):
                 if not allow_feedback:
                     details.pop("details", None)
             self._send_json({"submission": {**dict(submission), "grading": details}})
+            return
+        if path == "/api/student/grade.pdf":
+            session = self._require("student")
+            if not session:
+                return
+            with db_connect() as conn:
+                row = conn.execute(
+                    """SELECT s.*, u.display_name FROM submissions s
+                    JOIN users u ON u.user_id=s.user_id
+                    WHERE s.user_id=? ORDER BY s.submission_id DESC LIMIT 1""",
+                    (session["user_id"],),
+                ).fetchone()
+                if not row:
+                    self._send_json({"error": "Submit the assignment before downloading a grade PDF"}, 409)
+                    return
+                submission = dict(row)
+                grading = json.loads(submission["grading_json"])
+                conn.execute(
+                    "INSERT INTO audit_log(user_id, action, details_json, created_at) VALUES (?, 'GRADE_PDF_DOWNLOAD', ?, ?)",
+                    (session["user_id"], json.dumps({"submission_id": submission["submission_id"]}), now_iso()),
+                )
+                conn.commit()
+            body = build_grade_pdf(submission["display_name"], submission, grading)
+            ascii_name = _ascii_pdf_text(submission["display_name"])
+            safe_name = "".join(ch if ch.isalnum() else "_" for ch in ascii_name).strip("_") or "student"
+            filename = f"{safe_name}_Budget_Simulation_Grade_Attempt_{submission['attempt_number']}.pdf"
+            self.send_response(200)
+            self.send_header("Content-Type", "application/pdf")
+            self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.end_headers()
+            self.wfile.write(body)
             return
         if path == "/api/professor/students":
             session = self._require("professor")
@@ -536,12 +843,19 @@ class Handler(BaseHTTPRequestHandler):
                     FROM student_roster sr
                     JOIN users u ON u.user_id=sr.user_id
                     LEFT JOIN submissions s ON s.user_id=u.user_id
-                    WHERE sr.active=1
+                    WHERE sr.active=1 AND sr.professor_user_id=?
                     GROUP BY sr.student_id, u.user_id
-                    ORDER BY sr.student_name"""
+                    ORDER BY sr.student_name""",
+                    (session["user_id"],),
                 ).fetchall()
-                settings = {r["setting_key"]: r["setting_value"] for r in conn.execute("SELECT * FROM app_settings")}
-            self._send_json({"students": [dict(r) for r in rows], "settings": settings})
+                settings = {
+                    r["setting_key"]: r["setting_value"]
+                    for r in conn.execute(
+                        "SELECT setting_key, setting_value FROM professor_settings WHERE professor_user_id=?",
+                        (session["user_id"],),
+                    )
+                }
+            self._send_json({"students": [dict(r) for r in rows], "settings": settings, "professor": session["display_name"]})
             return
         if path == "/api/professor/submissions":
             session = self._require("professor")
@@ -551,8 +865,12 @@ class Handler(BaseHTTPRequestHandler):
                 rows = conn.execute(
                     """SELECT s.submission_id, s.attempt_number, s.score, s.submitted_at,
                     u.username, u.display_name
-                    FROM submissions s JOIN users u ON u.user_id=s.user_id
-                    ORDER BY s.submitted_at DESC"""
+                    FROM submissions s
+                    JOIN users u ON u.user_id=s.user_id
+                    JOIN student_roster sr ON sr.user_id=u.user_id
+                    WHERE sr.professor_user_id=?
+                    ORDER BY s.submitted_at DESC""",
+                    (session["user_id"],),
                 ).fetchall()
             self._send_json({"submissions": [dict(r) for r in rows]})
             return
@@ -570,15 +888,18 @@ class Handler(BaseHTTPRequestHandler):
             with db_connect() as conn:
                 unsynced = conn.execute(
                     """SELECT COUNT(*) AS c FROM submissions s
-                    WHERE NOT EXISTS (
+                    JOIN student_roster sr ON sr.user_id=s.user_id
+                    WHERE sr.professor_user_id=? AND NOT EXISTS (
                         SELECT 1 FROM dynamics_sync_log d
                         WHERE d.local_table='submissions'
                         AND d.local_record_id=CAST(s.submission_id AS TEXT)
                         AND d.sync_status='SUCCESS'
-                    )"""
+                    )""",
+                    (session["user_id"],),
                 ).fetchone()["c"]
                 last_sync = conn.execute(
-                    "SELECT sync_status, response_message, created_at FROM dynamics_sync_log ORDER BY sync_id DESC LIMIT 1"
+                    "SELECT sync_status, response_message, created_at FROM dynamics_sync_log WHERE user_id=? ORDER BY sync_id DESC LIMIT 1",
+                    (session["user_id"],),
                 ).fetchone()
             self._send_json({
                 "configured": configured,
@@ -595,8 +916,12 @@ class Handler(BaseHTTPRequestHandler):
             with db_connect() as conn:
                 rows = conn.execute(
                     """SELECT u.username, u.display_name, s.attempt_number, s.score, s.submitted_at
-                    FROM submissions s JOIN users u ON u.user_id=s.user_id
-                    ORDER BY u.display_name, s.attempt_number"""
+                    FROM submissions s
+                    JOIN users u ON u.user_id=s.user_id
+                    JOIN student_roster sr ON sr.user_id=u.user_id
+                    WHERE sr.professor_user_id=?
+                    ORDER BY u.display_name, s.attempt_number""",
+                    (session["user_id"],),
                 ).fetchall()
             output = io.StringIO()
             writer = csv.writer(output)
@@ -619,8 +944,12 @@ class Handler(BaseHTTPRequestHandler):
             password = str(data.get("password", ""))
             password_created = False
             with db_connect() as conn:
-                if login_name.lower() == "professor":
-                    user = conn.execute("SELECT * FROM users WHERE username='professor' AND active=1").fetchone()
+                professor_username = PROFESSOR_LOGIN_MAP.get(login_name.lower())
+                if professor_username:
+                    user = conn.execute(
+                        "SELECT * FROM users WHERE username=? AND role='professor' AND active=1",
+                        (professor_username,),
+                    ).fetchone()
                     if not user or not verify_password(password, user["password_hash"] or ""):
                         self._send_json({"error": "Invalid professor name or password"}, 401)
                         return
@@ -647,7 +976,9 @@ class Handler(BaseHTTPRequestHandler):
                         )
                         password_created = True
                     elif not hmac.compare_digest(str(stored_password), password):
-                        self._send_json({"error": "Invalid student name or password"}, 401)
+                        self._send_json({
+                            "error": "Invalid student name or password. If a password was previously created for this student, use the same five digits. The professor can clear the stored password from the Student Table when a first-time password must be created again."
+                        }, 401)
                         return
                     user = conn.execute("SELECT * FROM users WHERE user_id=? AND active=1", (roster["user_id"],)).fetchone()
                     if not user:
@@ -679,6 +1010,119 @@ class Handler(BaseHTTPRequestHandler):
                 with SESSIONS_LOCK:
                     SESSIONS.pop(morsel.value, None)
             self._send_json({"ok": True}, cookies=[session_cookie("", delete=True)])
+            return
+        if path == "/api/student/progress":
+            session = self._require("student")
+            if not session:
+                return
+            entries = data.get("entries", {})
+            if not isinstance(entries, dict):
+                self._send_json({"error": "entries must be an object"}, 400)
+                return
+            with db_connect() as conn:
+                support = penalty_summary(conn, session["user_id"], session["scenario_id"])
+                policy = get_student_policy(conn, session["user_id"])
+            self._send_json({"progress": progress_grade(entries, support["penalty_points"]), "support": support, "policy": policy})
+            return
+        if path == "/api/student/explanation":
+            session = self._require("student")
+            if not session:
+                return
+            schedule_id = str(data.get("schedule_id", "")).strip()
+            guide = SUPPORT_GUIDE.get(schedule_id)
+            if not guide:
+                self._send_json({"error": "Unknown assignment section"}, 404)
+                return
+            schedule = next(s for s in SCHEDULES if s["id"] == schedule_id)
+            with db_connect() as conn:
+                conn.execute(
+                    "INSERT INTO audit_log(user_id, action, details_json, created_at) VALUES (?, 'DETAILED_EXPLANATION', ?, ?)",
+                    (session["user_id"], json.dumps({"schedule_id": schedule_id}), now_iso()),
+                )
+                conn.commit()
+            self._send_json({"title": schedule["title"], "content": guide["explanation"], "penalty_points": 0})
+            return
+        if path == "/api/student/assistance":
+            session = self._require("student")
+            if not session:
+                return
+            schedule_id = str(data.get("schedule_id", "")).strip()
+            guide = SUPPORT_GUIDE.get(schedule_id)
+            if not guide:
+                self._send_json({"error": "Unknown assignment section"}, 404)
+                return
+            schedule = next(s for s in SCHEDULES if s["id"] == schedule_id)
+            with db_connect() as conn:
+                policy = get_student_policy(conn, session["user_id"])
+                penalty = float(policy["assistance_penalty"])
+                cur = conn.execute(
+                    """INSERT OR IGNORE INTO student_support_events
+                    (user_id, scenario_id, schedule_id, event_type, penalty_points, created_at)
+                    VALUES (?, ?, ?, 'assistance', ?, ?)""",
+                    (session["user_id"], session["scenario_id"], schedule_id, penalty, now_iso()),
+                )
+                first_use = cur.rowcount > 0
+                if first_use:
+                    conn.execute(
+                        "INSERT INTO audit_log(user_id, action, details_json, created_at) VALUES (?, 'ASSISTANCE_USED', ?, ?)",
+                        (session["user_id"], json.dumps({"schedule_id": schedule_id, "penalty_points": penalty}), now_iso()),
+                    )
+                support = penalty_summary(conn, session["user_id"], session["scenario_id"])
+                conn.commit()
+            self._send_json({
+                "title": schedule["title"], "content": guide["assistance"], "penalty_applied": penalty if first_use else 0,
+                "already_used": not first_use, "support": support, "policy": policy,
+            })
+            return
+        if path == "/api/student/check-work":
+            session = self._require("student")
+            if not session:
+                return
+            schedule_id = str(data.get("schedule_id", "")).strip()
+            if schedule_id not in SCHEDULE_KEYS:
+                self._send_json({"error": "Unknown assignment section"}, 404)
+                return
+            entries = data.get("entries", {})
+            if not isinstance(entries, dict):
+                self._send_json({"error": "entries must be an object"}, 400)
+                return
+            with db_connect() as conn:
+                policy = get_student_policy(conn, session["user_id"])
+                if not policy["check_work_enabled"]:
+                    self._send_json({"error": "Check My Work is disabled for this class section"}, 403)
+                    return
+                existing = conn.execute(
+                    """SELECT 1 FROM student_support_events
+                    WHERE user_id=? AND scenario_id=? AND schedule_id=? AND event_type='check_work'""",
+                    (session["user_id"], session["scenario_id"], schedule_id),
+                ).fetchone()
+                if existing:
+                    self._send_json({"error": "Check My Work has already been used for this section"}, 409)
+                    return
+                penalty = float(policy["check_work_penalty"])
+                conn.execute(
+                    """INSERT INTO student_support_events
+                    (user_id, scenario_id, schedule_id, event_type, penalty_points, created_at)
+                    VALUES (?, ?, ?, 'check_work', ?, ?)""",
+                    (session["user_id"], session["scenario_id"], schedule_id, penalty, now_iso()),
+                )
+                grading = grade_entries(entries)
+                schedule_result = grading["schedule_results"][schedule_id]
+                cell_feedback = {
+                    key: {"actual": grading["details"][key]["actual"], "correct": grading["details"][key]["correct"]}
+                    for key in SCHEDULE_KEYS[schedule_id]
+                }
+                conn.execute(
+                    "INSERT INTO audit_log(user_id, action, details_json, created_at) VALUES (?, 'CHECK_WORK_USED', ?, ?)",
+                    (session["user_id"], json.dumps({"schedule_id": schedule_id, "penalty_points": penalty, "correct": schedule_result["correct"], "possible_cells": schedule_result["possible_cells"]}), now_iso()),
+                )
+                support = penalty_summary(conn, session["user_id"], session["scenario_id"])
+                conn.commit()
+            self._send_json({
+                "schedule_id": schedule_id, "result": schedule_result, "details": cell_feedback,
+                "penalty_applied": penalty, "support": support, "policy": policy,
+                "progress": progress_grade(entries, support["penalty_points"]),
+            })
             return
         if path == "/api/student/save":
             session = self._require("student")
@@ -727,17 +1171,26 @@ class Handler(BaseHTTPRequestHandler):
             entries = normalize_entries(entries)
             with db_connect() as conn:
                 attempts = conn.execute("SELECT COUNT(*) AS c FROM submissions WHERE user_id=?", (session["user_id"],)).fetchone()["c"]
-                max_attempts = int(get_setting(conn, "max_attempts", "3"))
+                policy = get_student_policy(conn, session["user_id"])
+                max_attempts = policy["max_attempts"]
                 if attempts >= max_attempts:
                     self._send_json({"error": "Maximum number of attempts reached"}, 409)
                     return
                 grading = grade_entries(entries)
+                support = penalty_summary(conn, session["user_id"], session["scenario_id"])
+                raw_score = float(grading["score"])
+                penalty_points = float(support["penalty_points"])
+                adjusted_score = round(max(0.0, raw_score - penalty_points), 2)
+                grading["raw_score"] = round(raw_score, 2)
+                grading["penalty_points"] = round(penalty_points, 2)
+                grading["penalty_summary"] = support
+                grading["score"] = adjusted_score
                 attempt_no = attempts + 1
                 cur = conn.execute(
                     """INSERT INTO submissions
-                    (user_id, scenario_id, attempt_number, score, entries_json, grading_json, submitted_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                    (session["user_id"], session["scenario_id"], attempt_no, grading["score"], json.dumps(entries), json.dumps(grading), now_iso()),
+                    (user_id, scenario_id, attempt_number, score, raw_score, penalty_points, entries_json, grading_json, submitted_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (session["user_id"], session["scenario_id"], attempt_no, adjusted_score, raw_score, penalty_points, json.dumps(entries), json.dumps(grading), now_iso()),
                 )
                 submission_id = cur.lastrowid
                 for sid, result in grading["schedule_results"].items():
@@ -747,7 +1200,7 @@ class Handler(BaseHTTPRequestHandler):
                         VALUES (?, ?, ?, ?, ?, ?, ?)""",
                         (submission_id, sid, result["title"], result["score"], result["weight"], result["correct"], result["possible_cells"]),
                     )
-                conn.execute("INSERT INTO audit_log(user_id, action, details_json, created_at) VALUES (?, 'SUBMIT', ?, ?)", (session["user_id"], json.dumps({"attempt": attempt_no, "score": grading["score"]}), now_iso()))
+                conn.execute("INSERT INTO audit_log(user_id, action, details_json, created_at) VALUES (?, 'SUBMIT', ?, ?)", (session["user_id"], json.dumps({"attempt": attempt_no, "score": grading["score"], "raw_score": grading.get("raw_score"), "penalty_points": grading.get("penalty_points", 0)}), now_iso()))
                 conn.commit()
             self._send_json({"ok": True, "submission_id": submission_id, "attempt_number": attempt_no, "grading": grading})
             return
@@ -761,13 +1214,18 @@ class Handler(BaseHTTPRequestHandler):
                 return
             try:
                 with db_connect() as conn:
-                    if conn.execute(
-                        "SELECT 1 FROM student_roster WHERE lower(trim(student_name))=lower(trim(?))",
+                    duplicate = conn.execute(
+                        """SELECT sr.professor_user_id, u.display_name AS professor_name
+                        FROM student_roster sr
+                        JOIN users u ON u.user_id=sr.professor_user_id
+                        WHERE lower(trim(sr.student_name))=lower(trim(?))""",
                         (display_name,),
-                    ).fetchone():
-                        self._send_json({"error": "That student is already in the Student Table"}, 409)
+                    ).fetchone()
+                    if duplicate:
+                        owner = duplicate["professor_name"]
+                        self._send_json({"error": f"That student name is already assigned to {owner}. Student names must be unique across professor rosters so the existing student login method remains unambiguous."}, 409)
                         return
-                    ensure_roster_student(conn, session["scenario_id"], display_name)
+                    ensure_roster_student(conn, session["scenario_id"], session["user_id"], display_name)
                     conn.execute(
                         "INSERT INTO audit_log(user_id, action, details_json, created_at) VALUES (?, 'PROFESSOR_ADD_STUDENT', ?, ?)",
                         (session["user_id"], json.dumps({"student_name": display_name}), now_iso()),
@@ -788,22 +1246,132 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"error": "Valid user_id required"}, 400)
                 return
             with db_connect() as conn:
+                owned = conn.execute(
+                    "SELECT 1 FROM student_roster WHERE user_id=? AND professor_user_id=? AND active=1",
+                    (user_id, session["user_id"]),
+                ).fetchone()
+                if not owned:
+                    self._send_json({"error": "Student is not in this professor's Student Table"}, 404)
+                    return
                 conn.execute("DELETE FROM submission_schedule_scores WHERE submission_id IN (SELECT submission_id FROM submissions WHERE user_id=?)", (user_id,))
                 conn.execute("DELETE FROM submissions WHERE user_id=?", (user_id,))
                 conn.execute("DELETE FROM student_entries WHERE user_id=?", (user_id,))
+                conn.execute("DELETE FROM student_support_events WHERE user_id=?", (user_id,))
                 conn.execute("INSERT INTO audit_log(user_id, action, details_json, created_at) VALUES (?, 'PROFESSOR_RESET', ?, ?)", (session["user_id"], json.dumps({"student_user_id": user_id}), now_iso()))
                 conn.commit()
             self._send_json({"ok": True})
+            return
+        if path == "/api/professor/reset-password":
+            session = self._require("professor")
+            if not session:
+                return
+            try:
+                user_id = int(data.get("user_id"))
+            except (TypeError, ValueError):
+                self._send_json({"error": "Valid user_id required"}, 400)
+                return
+            with db_connect() as conn:
+                roster = conn.execute(
+                    "SELECT student_id, student_name FROM student_roster WHERE user_id=? AND professor_user_id=? AND active=1",
+                    (user_id, session["user_id"]),
+                ).fetchone()
+                if not roster:
+                    self._send_json({"error": "Student was not found in the active Student Table"}, 404)
+                    return
+                conn.execute(
+                    "UPDATE student_roster SET password=NULL, password_created_at=NULL WHERE student_id=?",
+                    (roster["student_id"],),
+                )
+                conn.execute(
+                    "INSERT INTO audit_log(user_id, action, details_json, created_at) VALUES (?, 'PROFESSOR_RESET_PASSWORD', ?, ?)",
+                    (session["user_id"], json.dumps({"student_user_id": user_id, "student_name": roster["student_name"]}), now_iso()),
+                )
+                conn.commit()
+            self._send_json({"ok": True})
+            return
+        if path == "/api/professor/clear-student-table":
+            session = self._require("professor")
+            if not session:
+                return
+            confirmation = str(data.get("confirmation", "")).strip()
+            if confirmation != "CLEAR STUDENT TABLE":
+                self._send_json({"error": "Type CLEAR STUDENT TABLE exactly to confirm the end-of-semester clear"}, 400)
+                return
+            deleted_user_ids = []
+            with db_connect() as conn:
+                rows = conn.execute(
+                    "SELECT user_id FROM student_roster WHERE professor_user_id=?",
+                    (session["user_id"],),
+                ).fetchall()
+                deleted_user_ids = [int(row["user_id"]) for row in rows]
+                students_removed = len(deleted_user_ids)
+                # Delete only students owned by the currently authenticated professor.
+                # Cascades remove that professor's roster rows, drafts, submissions,
+                # schedule scores, and support events without affecting other rosters.
+                if deleted_user_ids:
+                    placeholders = ",".join("?" for _ in deleted_user_ids)
+                    conn.execute(f"DELETE FROM users WHERE user_id IN ({placeholders}) AND role='student'", deleted_user_ids)
+                conn.execute(
+                    """INSERT INTO student_roster_clear_log
+                    (professor_user_id, students_removed, cleared_at)
+                    VALUES (?, ?, ?)""",
+                    (session["user_id"], students_removed, now_iso()),
+                )
+                conn.execute(
+                    "INSERT INTO audit_log(user_id, action, details_json, created_at) VALUES (?, 'PROFESSOR_CLEAR_STUDENT_TABLE', ?, ?)",
+                    (session["user_id"], json.dumps({"students_removed": students_removed}), now_iso()),
+                )
+                conn.commit()
+            if deleted_user_ids:
+                deleted = set(deleted_user_ids)
+                with SESSIONS_LOCK:
+                    for token, existing_session in list(SESSIONS.items()):
+                        if existing_session.get("role") == "student" and existing_session.get("user_id") in deleted:
+                            SESSIONS.pop(token, None)
+            self._send_json({"ok": True, "students_removed": len(deleted_user_ids)})
             return
         if path == "/api/professor/settings":
             session = self._require("professor")
             if not session:
                 return
-            allowed = {"max_attempts", "passing_score", "allow_student_feedback"}
+            allowed = {"max_attempts", "passing_score", "allow_student_feedback", "check_work_enabled", "check_work_penalty", "assistance_penalty"}
+            # Validate settings before storing them for this professor only.
+            try:
+                max_attempts = int(data.get("max_attempts", 3))
+                passing_score = float(data.get("passing_score", 80))
+                check_work_penalty = float(data.get("check_work_penalty", 1))
+                assistance_penalty = float(data.get("assistance_penalty", 1))
+            except (TypeError, ValueError):
+                self._send_json({"error": "Assignment settings contain an invalid number"}, 400)
+                return
+            if not 1 <= max_attempts <= 10:
+                self._send_json({"error": "Maximum attempts must be between 1 and 10"}, 400)
+                return
+            if not 0 <= passing_score <= 100 or not 0 <= check_work_penalty <= 100 or not 0 <= assistance_penalty <= 100:
+                self._send_json({"error": "Scores and penalty points must be between 0 and 100"}, 400)
+                return
+            normalized = {
+                "max_attempts": str(max_attempts),
+                "passing_score": str(passing_score),
+                "allow_student_feedback": "1" if str(data.get("allow_student_feedback", "1")) in {"1", "True", "true"} or data.get("allow_student_feedback") is True else "0",
+                "check_work_enabled": "1" if str(data.get("check_work_enabled", "1")) in {"1", "True", "true"} or data.get("check_work_enabled") is True else "0",
+                "check_work_penalty": str(check_work_penalty),
+                "assistance_penalty": str(assistance_penalty),
+            }
             with db_connect() as conn:
-                for key, value in data.items():
+                for key, value in normalized.items():
                     if key in allowed:
-                        conn.execute("INSERT INTO app_settings(setting_key, setting_value) VALUES (?, ?) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value", (key, str(value)))
+                        conn.execute(
+                            """INSERT INTO professor_settings(professor_user_id, setting_key, setting_value)
+                            VALUES (?, ?, ?)
+                            ON CONFLICT(professor_user_id, setting_key)
+                            DO UPDATE SET setting_value=excluded.setting_value""",
+                            (session["user_id"], key, value),
+                        )
+                conn.execute(
+                    "INSERT INTO audit_log(user_id, action, details_json, created_at) VALUES (?, 'PROFESSOR_SETTINGS_UPDATE', ?, ?)",
+                    (session["user_id"], json.dumps(normalized), now_iso()),
+                )
                 conn.commit()
             self._send_json({"ok": True})
             return
@@ -821,14 +1389,17 @@ class Handler(BaseHTTPRequestHandler):
             with db_connect() as conn:
                 rows = conn.execute(
                     """SELECT s.*, u.username, u.display_name
-                    FROM submissions s JOIN users u ON u.user_id=s.user_id
-                    WHERE NOT EXISTS (
+                    FROM submissions s
+                    JOIN users u ON u.user_id=s.user_id
+                    JOIN student_roster sr ON sr.user_id=u.user_id
+                    WHERE sr.professor_user_id=? AND NOT EXISTS (
                         SELECT 1 FROM dynamics_sync_log d
                         WHERE d.local_table='submissions'
                         AND d.local_record_id=CAST(s.submission_id AS TEXT)
                         AND d.sync_status='SUCCESS'
                     )
-                    ORDER BY s.submission_id"""
+                    ORDER BY s.submission_id""",
+                    (session["user_id"],),
                 ).fetchall()
                 for row in rows:
                     submission = dict(row)
@@ -887,8 +1458,8 @@ def run() -> None:
     print("\nNorthbridge Components MBA Budget Simulation")
     print(f"Open locally: {url}")
     print(f"Network access: http://<this-computer-IP>:{PORT}")
-    print("Professor login name: Professor")
-    print(f"Student roster loaded: {len(STUDENT_ROSTER_NAMES)} students; first login creates a five-digit numerical password")
+    print("Professor login names: Professor, Professor 1, Professor 2")
+    print(f"Initial student roster contains {len(STUDENT_ROSTER_NAMES)} students; first login creates a five-digit numerical password")
     print("Press Ctrl+C to stop.\n")
     if os.environ.get("BUDGET_SIM_NO_BROWSER") != "1":
         threading.Timer(1.0, lambda: webbrowser.open(url)).start()
